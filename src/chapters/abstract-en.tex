@@ -1,0 +1,27 @@
+\clearpage
+\pagestyle{empty}
+
+\addcontentsline{toc}{chapter}{Abstract}
+
+\begin{center}
+    \fontsize{14}{17}\selectfont \bfseries \MakeUppercase{ABSTRACT}
+    \singlespacing
+    \fontsize{14}{17}\selectfont \bfseries \MakeUppercase{DATA SYNCHRONIZATION OPTIMIZATION IN CQRS ARCHITECTURE WITH LQR CONTROL}
+
+    \vspace{\baselineskip}
+
+   \normalsize \normalfont
+    By\\
+    \textbf{\fontsize{14pt}{17pt}\selectfont \theauthor \\[0.5ex]
+    (Master's Program in Computer Science)}
+
+    \vspace{3\baselineskip}
+\end{center}
+
+The Command Query Responsibility Segregation (CQRS) architecture is a common approach used in distributed systems to separate read and write databases. While providing benefits in scalability, this approach introduces new challenges, particularly in maintaining data consistency across databases. This challenge becomes more complex when synchronization is performed asynchronously through a message broker. Parameters such as batch size and poll interval need to be carefully configured. Large batch settings optimize power consumption but cause synchronization delays. To balance this trade-off, adaptive synchronization based on system state is required.
+
+This research develops a feedback control mechanism using Linear Quadratic Regulator (LQR). This approach enables automatic parameter adjustment considering system state variables, particularly message queue count in the message broker and CPU and memory usage on servers. The controller is designed to minimize a quadratic cost function encompassing two state variables and control variables, namely batch size and poll interval. The system model is expressed in state-space form and analyzed as a MIMO (Multi-Input Multi-Output) system. Testing is conducted by comparing system performance under scenarios with static parameter settings and feedback control.
+
+Keywords: CQRS, data synchronization, consistency, latency, Kafka, LQR, optimal control, MIMO, state-space
+
+\clearpage

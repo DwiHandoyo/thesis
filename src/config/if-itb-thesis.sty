@@ -1,0 +1,236 @@
+%-------------------------------------------------------------------%
+%
+% Konfigurasi dokumen LaTeX untuk laporan tesis IF ITB
+%
+% @author Petra Novandi
+%
+%-------------------------------------------------------------------%
+%
+% Berkas asli berasal dari Steven Lolong
+%
+%-------------------------------------------------------------------%
+
+% Ukuran kertas
+\special{papersize=210mm,297mm}
+
+% Setting margin
+\usepackage[top=3cm,bottom=3cm,left=4cm,right=3cm]{geometry}
+
+% Math package
+\usepackage{mathptmx}
+
+% 4th Sectioning
+\usepackage{titlesec}
+\newcommand{\subsubsubsection}[1]{\paragraph{#1}\mbox{}\\}
+
+\titleformat{\subsubsubsection}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titleformat*{\section}{\normalfont\normalsize\bfseries}
+\titleformat*{\subsection}{\normalfont\normalsize\bfseries}
+\titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{0pt}
+\titlespacing*{\subsection}{0pt}{3.25ex plus 1ex minus .2ex}{0pt}
+\titlespacing*{\subsubsubsection}{0pt}{3.25ex plus 1ex minus .2ex}{0pt}
+% {0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
+% Judul bahasa Indonesia
+\usepackage[bahasa]{babel}
+
+% Format citation
+\usepackage[utf8]{inputenc}
+% \usepackage[style=apa,backend=biber]{biblatex}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{subfig}
+\usepackage{titling}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{blindtext}
+% \usepackage{sectsty}
+\usepackage{chngcntr}
+\usepackage{etoolbox}
+\usepackage{array}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}       % Package untuk link di daftar isi. Ubah jadi \usepackage[hidelinks]{hyperref} apabila ingin menghilangkan kotak merah disekitar link
+\usepackage{titletoc}       % Package Format judul di toc
+\usepackage{tocbibind}      % Package untuk masukkan toc, lot, lof ke Daftar Isi
+\usepackage{scrwfile}       % Package untuk membuat Daftar Lampiran dari toc
+\usepackage{parskip}
+\usepackage{afterpage}
+\usepackage{relsize}
+\usepackage{xcolor, colortbl}
+\usepackage{setspace}
+\usepackage{listings}
+\usepackage{csquotes}
+\usepackage{multirow}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\graphicspath{{resources/}}   % letak direktori penyimpanan gambar
+
+% Setting daftar lampiran
+\newcommand*{\lopname}{DAFTAR LAMPIRAN}
+\TOCclone[\lopname]{toc}{atoc}
+\addtocontents{atoc}{\protect\value{tocdepth}=-1}
+\newcommand\listofappendices{
+  \cleardoublepage
+  \phantomsection
+  \listofatoc
+  \addcontentsline{toc}{chapter}{\lopname}
+}
+
+\newcommand*\savedtocdepth{}
+\AtBeginDocument{%
+  \edef\savedtocdepth{\the\value{tocdepth}}%
+}
+
+\newlength{\appchapnumwidth}
+\settowidth{\appchapnumwidth}{Lampiran A\quad}
+\newlength{\appsecnumwidth}
+\settowidth{\appsecnumwidth}{A.10\quad}
+\newlength{\appsubsecindent}
+\setlength{\appsubsecindent}{\appchapnumwidth}
+\addtolength{\appsubsecindent}{\appsecnumwidth}
+
+\let\originalappendix\appendix
+\renewcommand\appendix{%
+  \originalappendix
+  \cleardoublepage
+  \addcontentsline{toc}{chapter}{LAMPIRAN} % Biar masuk ToC
+  \addtocontents{toc}{\protect\value{tocdepth}=-1}%
+  \addtocontents{atoc}{\protect\value{tocdepth}=\savedtocdepth}%
+
+  \titlecontents{chapter}
+    [0pt]
+    {}
+    {\makebox[\appchapnumwidth][l]{Lampiran \thecontentslabel\quad}}
+    {\uppercase}
+    {\mdseries\titlerule*[0.35em]{.}\contentspage}[{\vspace{2pt}}]
+
+  \titlecontents{section}
+    [\appchapnumwidth]
+    {}
+    {\makebox[\appsecnumwidth][l]{\thecontentslabel\quad}}
+    {}
+    {\mdseries\titlerule*[0.35em]{.}\contentspage}
+
+  \titlecontents{subsection}
+    [\appsubsecindent]
+    {}
+    {\thecontentslabel\quad}
+    {}
+    {\mdseries\titlerule*[0.35em]{.}\contentspage}
+
+  \titleformat{\chapter}[block]
+    {\bfseries}
+    {\chaptertitlename\ \thechapter\quad}{0pt}
+    {\bfseries}
+}
+
+% Hilangkan titik pada toc
+\makeatletter
+\renewcommand{\@dotsep}{1}
+\makeatother
+
+% Setel title pada chapter-chapter di toc, lof, lot
+\newlength{\chapnumwidth}
+\settowidth{\chapnumwidth}{Bab IV\quad}
+\newlength{\secnumwidth}
+\settowidth{\secnumwidth}{IV.5\quad}
+\newlength{\subsecindent}
+\setlength{\subsecindent}{\chapnumwidth}
+\addtolength{\subsecindent}{\secnumwidth}
+\titlecontents{chapter}
+  [0pt]
+  {}
+  {\makebox[\chapnumwidth][l]{Bab \thecontentslabel\quad}} % For numbered chapters
+  {\uppercase} % For NUMBERLESS chapters (like DAFTAR ISI)
+  {\mdseries\titlerule*[0.35em]{.}\contentspage}
+\titlecontents{section}
+  [\chapnumwidth] % Indent by chapter number width
+  {}
+  {\makebox[\secnumwidth][l]{\thecontentslabel\quad}} % Use a box for the section number
+  {}
+  {\mdseries\titlerule*[0.35em]{.}\contentspage}
+\titlecontents{subsection}
+  [\subsecindent] % Indent by the combined width of chapter + section numbers
+  {}
+  {\thecontentslabel\quad}
+  {}
+  {\mdseries\titlerule*[0.35em]{.}\contentspage}
+\titlecontents{figure}
+  [0pt]
+  {}
+  {Gambar \thecontentslabel\quad}
+  {}
+  {\mdseries\titlerule*[0.35em]{.}\contentspage}
+\titlecontents{table}
+  [0pt]
+  {}
+  {Tabel \thecontentslabel\quad}
+  {}
+  {\mdseries\titlerule*[0.35em]{.}\contentspage}
+
+% Masukin Daftar Pustaka ke toc
+% \let\originalprintbibliography\printbibliography
+% \renewcommand\printbibliography{%
+%   \phantomsection
+%   \cleardoublepage
+%   \originalprintbibliography
+%   \addcontentsline{toc}{chapter}{\bibname}
+% }
+
+% Line satu setengah spasi
+\renewcommand{\baselinestretch}{1.5}
+
+% Setting judul
+% \chapterfont{\centering \large}
+\titleformat{\chapter}[hang]
+{\fontsize{14pt}{17pt}\selectfont\centering\bfseries}
+{Bab \thechapter}{1em}
+{\bfseries}
+
+% Setting nomor pada subbsubsubbab
+\setcounter{secnumdepth}{4}
+
+\makeatletter
+
+\makeatother
+
+% Counter untuk figure dan table.
+\counterwithin{figure}{chapter}
+\counterwithin{table}{chapter}
+
+% Define blank page
+\newcommand*{\blankpage}{\afterpage{\null\newpage}}
+
+% Define after paragraph space
+\setlength{\parskip}{1\baselineskip} % space after paragraph
+
+% Translate autoref into Indonesian
+\renewcommand*{\equationautorefname}{Persamaan}%
+\renewcommand*{\footnoteautorefname}{catatan kaki}%
+\renewcommand*{\itemautorefname}{item}%
+\renewcommand*{\figureautorefname}{Gambar}%
+\renewcommand*{\tableautorefname}{Tabel}%
+\renewcommand*{\partautorefname}{Bagian}%
+\renewcommand*{\appendixautorefname}{Lampiran}%
+\renewcommand*{\chapterautorefname}{Bab}%
+\renewcommand*{\sectionautorefname}{Subbab}%
+\renewcommand*{\subsectionautorefname}{Subsubbab}%
+\renewcommand*{\subsubsectionautorefname}{Subsubsubbab}%
+\renewcommand*{\paragraphautorefname}{paragraf}%
+\renewcommand*{\subparagraphautorefname}{subparagraf}%
+\renewcommand*{\FancyVerbLineautorefname}{garis}%
+\renewcommand*{\theoremautorefname}{Teorema}%
+\renewcommand*{\pageautorefname}{halaman}%
+
+% Format to ignore underflow hbadness
+\hbadness=99999
+
+% Redefine \cite for Name (Year)
+% \DeclareCiteCommand{\cite}
+% {\usebibmacro{prenote}} % Optional prenote
+% {\printnames{labelname}\space(\printfield{year})} % Name (Year)
+% {\multicitedelim} % Separator for multiple citations
+%
+% {\usebibmacro{postnote}} % Optional postnote

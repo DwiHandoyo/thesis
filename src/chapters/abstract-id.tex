@@ -1,0 +1,27 @@
+\clearpage
+\pagestyle{empty}
+
+\addcontentsline{toc}{chapter}{Abstrak}
+
+\begin{center}
+    \fontsize{14}{17}\selectfont \bfseries \MakeUppercase{ABSTRAK}
+    \singlespacing
+    \fontsize{14}{17}\selectfont \bfseries \MakeUppercase{\thetitle}
+    
+    \vspace{\baselineskip}
+
+   \normalsize \normalfont
+    Oleh\\
+    \textbf{\fontsize{14pt}{17pt}\selectfont \theauthor \\[0.5ex]
+    (Program Studi Magister Informatika)}
+    
+    \vspace{3\baselineskip}
+\end{center}
+
+Arsitektur Command Query Responsibility Segregation (CQRS) merupakan salah satu pendekatan yang umum digunakan dalam sistem terdistribusi untuk memisahkan basis data baca dan tulis. Meskipun memberikan keuntungan dalam hal skalabilitas, pendekatan ini juga membawa tantangan baru, khususnya dalam menjaga konsistensi data antar basis data. Tantangan ini semakin kompleks ketika proses sinkronisasi dilakukan secara asinkron melalui perantara message broker. Parameter-parameter seperti batch size dan poll interval perlu diatur secara tepat. Pengaturan batch yang besar akan mengoptimasi penggunaan daya namun menyebabkan waktu sinkronisasi menjadi lama. Untuk menyeimbangkan trade-off tersebut diperlukan sinkronisasi adaptif terhadap keadaan sistem.
+
+Penelitian ini mengembangkan mekanisme pengendalian berbasis umpan balik menggunakan Linear Quadratic Regulator (LQR). Pendekatan ini memungkinkan penyesuaian parameter sinkronisasi secara otomatis dengan mempertimbangkan variable state, khususnya jumlah antrean pesan dalam message broker, serta tingkat pemakaian CPU dan memori pada server. Pengendali dirancang untuk meminimalkan fungsi biaya kuadratik yang mencakup dua variabel state tersebut dan juga variable kontrol yaitu batch size dan poll interval. Model sistem dinyatakan dalam bentuk state-space dan dianalisis sebagai sistem MIMO (Multi-Input Multi-Output). Pengujian dilakukan dengan membandingkan performa sistem pada skenario dengan pengaturan parameter statik dan pengendalian umpan balik.
+
+Kata Kunci: CQRS, sinkronisasi data, konsistensi, latency, Kafka, LQR, kontrol optimal, MIMO, state-space
+
+\clearpage

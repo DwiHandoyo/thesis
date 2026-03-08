@@ -1,0 +1,290 @@
+\chapter{Analisis dan Solusi}
+
+
+\begin{quote}
+Fenomena ketidaksinkronan pada arsitektur CQRS muncul sebagai konsekuensi dari pemisahan model tulis dan baca yang bergantung pada aliran event. Pada kondisi beban yang fluktuatif, laju kedatangan event tidak selalu sejalan dengan kapasitas pemrosesan konsumer, sehingga backlog dapat meningkat dan menghasilkan keterlambatan pembaruan pada database baca. Peningkatan ukuran batch memang dapat menurunkan frekuensi pemrosesan dan mengurangi overhead, tetapi juga berpotensi menambah penundaan pembaruan data. Sebaliknya, ukuran batch yang terlalu kecil menghasilkan pemrosesan yang lebih responsif, namun cenderung meningkatkan konsumsi sumber daya dan menurunkan throughput.
+
+Untuk itu, diperlukan system yang mampu menyeimbangkan kebutuhan akan data yang responsif namun juga efisien dalam penggunaan sumber daya. Dalam perancangan system tersebut, diperlukan pemahaman yang baik mengenai hubungan antara variabel-variabel yang membentuk dinamika sistem. Analisis ini mencakup identifikasi variabel state yang mewakili kondisi sistem pada suatu waktu, variabel kontrol yang dapat diatur, serta bagaimana perubahan pada variabel tersebut memengaruhi performa sinkronisasi, baik dalam hal backlog, latensi, maupun utilisasi sumber daya. Pemahaman ini menjadi dasar perumusan model pengendalian yang memungkinkan penyesuaian parameter secara adaptif agar sistem tetap berada pada kondisi yang stabil dan efisien.
+\end{quote}
+
+\subsection{Analisis Masalah}
+
+\begin{quote}
+Alur sinkronisasi pada arsitektur CQRS bergantung pada proses konsumsi event dari log, pengelompokan event ke dalam batch, dan materialisasi ulang menjadi read model. Pada kondisi beban rendah, alur ini cenderung stabil karena kapasitas pemrosesan sejalan dengan laju kedatangan event. Namun ketika terjadi peningkatan throughput penulisan atau penurunan kapasitas konsumsi, backlog mulai meningkat dan menimbulkan keterlambatan propagasi data ke read model. Keterlambatan ini dapat secara langsung dirasakan pengguna dalam hal ketidakakuratan data karena data yang tidak aktual.
+
+Masalah menjadi lebih kompleks karena pengaturan parameter utama seperti ukuran batch dan interval polling tidak selalu menaikan performa. Ukuran batch yang lebih besar dapat meningkatkan efisiensi pemrosesan karena mengurangi frekuensi commit dan overhead jaringan dan komputasi, tetapi juga menunda waktu mulai pemrosesan sehingga menambah latensi sinkronisasi terlihat pada gambar III.1. Sebaliknya, ukuran batch yang lebih kecil mempercepat pembaruan data tetapi meningkatkan konsumsi sumber daya CPU dan I/O, yang pada tingkat tertentu justru menurunkan throughput keseluruhan. Ketidakseimbangan ini menyebabkan sistem rentan terhadap ketidakpastian performa ketika beban berubah-ubah, terutama pada skenario bersifat \emph{bursty}.
+
+% [Image removed from draft]
+
+Gambar III.1 Pengaruh ukuran batch terhadap rata rata \emph{latency} (Wu, 2020)
+
+Untuk memahami perilaku sistem tersebut, beberapa variabel dapat dianggap sebagai representasi kondisi atau state sistem. Backlog event menjadi indikator utama yang menggambarkan selisih antara laju produksi dan laju konsumsi pada saat itu. Latensi pemrosesan event menunjukkan waktu yang dibutuhkan untuk memproses sebuah perubahan dan sangat dipengaruhi oleh besarnya batch, kapasitas komputasi, serta tingkat kontensi sumber daya. Selain itu, utilisasi CPU atau memori pada komponen konsumer juga merefleksikan kapasitas sistem dalam merespons beban tambahan. Variabel-variabel ini tidak hanya merepresentasikan kondisi sesaat, tetapi juga menentukan apakah sistem akan stabil atau mengalami akumulasi backlog secara terus-menerus.
+
+Di sisi lain, variabel yang dapat dikendalikan atau \textbf{c}ontrol variables meliputi ukuran batch dan interval polling pada konsumer. Kedua parameter ini secara langsung mengatur ritme konsumsi data dan besarnya unit kerja yang diproses dalam setiap siklus. Karena keduanya memengaruhi backlog, latensi, dan utilisasi sumber daya, kombinasi nilai yang tidak tepat dapat menyebabkan kondisi sistem berada di luar rentang yang diinginkan. Masalah inilah yang ingin diatasi melalui pendekatan pengendalian dengan menentukan nilai pengaturan yang dapat menyeimbangkan pergerakan variabel state agar tetap berada pada kondisi stabil meskipun terjadi variasi beban.
+
+Namun hubungan antara variabel state dan kontrol bersifat dinamis dan tidak selalu mudah dipetakan secara langsung. Backlog, misalnya, bergantung pada interaksi antara laju produksi event dan kapasitas pemrosesan aktual pada konsumer, yang keduanya dapat bervariasi seiring waktu. Latensi pemrosesan batch dapat berubah akibat peningkatan jumlah thread aktif, perubahan beban komputasi, atau efek kontensi I/O. Ketidakpastian dan variasi inilah yang membuat pengaturan statis tidak memadai, karena parameter yang optimal pada satu kondisi dapat menjadi suboptimal atau bahkan kontraproduktif pada kondisi lainnya. Oleh karena itu, diperlukan model yang mampu menangkap hubungan dinamis antara state dan kontrol sehingga sistem dapat diatur secara adaptif sesuai perubahan kondisi.
+
+Analisis ini menunjukkan bahwa inti permasalahan bukan sekadar menentukan nilai batch atau interval polling yang paling cepat atau paling efisien, tetapi menemukan cara untuk menjaga keseimbangan antara backlog, latensi, dan utilisasi sumber daya dalam kondisi sistem yang terus berubah. Model pengendalian dibutuhkan untuk menjaga agar variabel state bergerak menuju kondisi yang stabil dan terkendali, terlepas dari variasi beban. Hasil analisis inilah yang menjadi dasar untuk merancang pendekatan pengendalian yang akan dibahas pada subbab berikutnya.
+\end{quote}
+
+\subsection{Rancangan Solusi}
+
+\begin{quote}
+Berdasarkan analisis pada bagian sebelumnya, permasalahan sinkronisasi data pada arsitektur CQRS menunjukkan karakteristik sistem dinamis yang dipengaruhi oleh interaksi antara kondisi sistem dan parameter pengaturan pemrosesan. Backlog, latensi sinkronisasi, dan utilisasi sumber daya tidak berkembang secara independen, melainkan saling mempengaruhi seiring perubahan beban dan konfigurasi sinkronisasi. Oleh karena itu, solusi yang dirancang dalam penelitian ini tidak bertujuan mencari konfigurasi parameter statis yang optimal, melainkan mekanisme pengendalian yang mampu menyesuaikan parameter sinkronisasi secara adaptif agar sistem tetap berada pada kondisi seimbang.
+
+Pendekatan pengendalian yang diusulkan dirancang dengan memformulasikan proses sinkronisasi sebagai sistem dinamis dalam kerangka \emph{state-space}. Dengan formulasi ini, hubungan antara kondisi sistem (\emph{state}) dan parameter yang dapat dikendalikan (\emph{control input}) dapat dianalisis dan diatur secara sistematis. Pendekatan ini memungkinkan penerapan berbagai strategi pengendalian, mulai dari kontrol umpan balik konvensional hingga kontrol optimal dan pendekatan berbasis data, dalam kerangka yang konsisten.
+\end{quote}
+
+\subsubsection{\textbf{Abstraksi Sistem dan Pemodelan State-Space}
+
+\begin{quote}
+Untuk merancang mekanisme pengendalian, proses sinkronisasi CQRS diabstraksikan sebagai sistem dinamis diskrit yang berevolusi seiring waktu. Abstraksi ini memandang pipeline sinkronisasi, mulai dari konsumsi event hingga materialisasi \emph{read model}, sebagai sebuah sistem yang memiliki keadaan internal dan dapat dipengaruhi melalui aksi kontrol tertentu. Pendekatan ini sejalan dengan praktik pemodelan sistem komputasi sebagai sistem dinamis ketika perilaku sistem dipengaruhi oleh umpan balik dan perubahan beban (Ogata, 2010).
+
+Pada Message Sink terdapat Persamaan II.1 nilai-nilai matriks A, B, C, dan D didapatkan dari ekperimen dengan pendekatan open loop agar diketahui pengaruh variable-variable kontrol terhadap variable-variable state (\emph{u}). Dengan vektor aksi kontrol \emph{\ul{u} terdefinisi sebagai
+\end{quote}
+
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \emph{b} adalah \emph{batch size,} yaitu jumlah pesan yang diproses dalam satu batch
+\item
+  \emph{p} adalah \emph{poll interval}, yaitu waktu yang jeda yang ditentukan untuk sistem dapat memroses batch data.
+\end{enumerate}
+
+\begin{quote}
+Vektor state \emph{x} terdefinisi sebagai
+\end{quote}
+
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \emph{n} adalah banyaknya pesan pada event source,
+\item
+  \emph{c} adalah \emph{cpu utilization,}
+\item
+  \emph{m} adalah \emph{memory utilization}
+\item
+  \emph{o} adalah \emph{I/O operation}
+\end{enumerate}
+
+\begin{quote}
+Pemilihan variabel ini didasarkan pada dua pertimbangan utama. Pertimbangan tersebut adalah variabel dapat diobservasi atau diukur secara real-time dan juga variabel tersebut memiliki pengaruh langsung terhadap laju sinkronisasi dan tekanan terhadap \emph{read database}
+
+Dalam konteks sistem nyata, hubungan antara \emph{state} dan \emph{control} bersifat nonlinier. Namun, untuk keperluan perancangan kontrol optimal, sistem diasumsikan dapat didekati secara linier pada rentang operasi tertentu (\emph{linearization around operating point}). Selain itu, diasumsikan bahwa perubahan beban dalam satu interval kontrol relatif kecil (\emph{quasi-stationary assumption}), sehingga pendekatan linier diskrit masih valid untuk perancangan kendali (Ogata, 2010; Hellerstein et al., 2004). Validitas asumsi ini kemudian diuji melalui eksperimen \emph{open-loop} pada tahap persiapan penelitian.
+\end{quote}
+
+\subsubsection{\textbf{Perancangan Fungsi Biaya dan Definisi Keseimbangan}
+
+\begin{quote}
+Tujuan pengendalian dalam penelitian ini adalah menjaga keseimbangan antara kecepatan sinkronisasi data dan efisiensi penggunaan sumber daya. Keseimbangan tersebut tidak dapat direpresentasikan oleh satu metrik tunggal, melainkan merupakan kompromi antara beberapa tujuan yang saling bertentangan, seperti minimisasi backlog, pengurangan latensi sinkronisasi, dan pembatasan utilisasi sumber daya agar tidak melampaui kapasitas sistem (Bailis et al., 2012).
+
+Untuk merepresentasikan tujuan tersebut secara formal, digunakan fungsi biaya kuadratik yang didefinisikan pada persamaan II.2. Komponen pertama dari fungsi biaya memberikan penalti terhadap deviasi kondisi sistem dari keadaan yang diinginkan, sementara komponen kedua memberikan penalti terhadap besarnya aksi kontrol yang diterapkan. Dengan formulasi ini, sistem tidak hanya diarahkan untuk mengurangi backlog atau utilisasi sumber daya, tetapi juga menghindari perubahan parameter sinkronisasi yang terlalu agresif atau terlalu lambat.
+
+Makna optimal dalam kerangka LQR didefinisikan sebagai keputusan kontrol yang meminimalkan fungsi biaya tersebut sepanjang horizon waktu, sehingga menghasilkan kompromi terbaik antara perbaikan kondisi sistem dan besarnya perubahan parameter sinkronisasi. Bobot pada matriks Q mencerminkan tingkat kepentingan relatif masing-masing variabel state, misalnya penekanan yang lebih besar pada backlog akan mendorong sistem untuk mempercepat sinkronisasi, sementara penekanan pada utilisasi sumber daya akan menghasilkan perilaku pengendalian yang lebih konservatif. Matriks R berfungsi untuk membatasi perubahan \emph{batch size} dan \emph{poll interval} agar tidak terlalu agresif, sehingga mengurangi potensi osilasi dan ketidakstabilan sistem.
+\end{quote}
+
+\subsubsection{\textbf{Kontrol Optimal Linear Quadratic Regulator (LQR)}
+
+\begin{quote}
+Kontrol optimal LQR digunakan sebagai pendekatan berbasis model yang secara eksplisit memformulasikan tujuan pengendalian dalam bentuk fungsi biaya. LQR bekerja berdasarkan representasi \emph{state-space} sistem, di mana kondisi sinkronisasi direpresentasikan sebagai vektor state dan parameter sinkronisasi sebagai vektor kontrol. Dengan model ini, LQR menghitung kebijakan kontrol yang meminimalkan fungsi biaya kuadratik yang merepresentasikan keseimbangan antara perbaikan kondisi sistem dan besarnya aksi kontrol.pen
+
+LQR mempertimbangkan seluruh variabel state secara simultan dan tidak hanya berfokus pada satu sinyal kesalahan. Pendekatan ini memungkinkan pengendalian yang lebih sistematis terhadap trade-off antara backlog, latensi sinkronisasi, dan utilisasi sumber daya. Kebijakan kontrol LQR diperoleh melalui penyelesaian persamaan Riccati, sehingga aksi kontrol yang dihasilkan bersifat optimal secara matematis pada asumsi linearitas lokal dan gangguan terbatas.
+
+Keterbatasan utama LQR terletak pada kebutuhan akan model sistem dan penentuan bobot fungsi biaya yang tepat. Proses identifikasi model dan penalaan bobot memerlukan eksperimen awal dan pemahaman terhadap dinamika sistem. Meskipun demikian, LQR memberikan kerangka pengendalian yang interpretable dan konsisten secara teori, sehingga cocok digunakan sebagai pendekatan utama dalam penelitian ini.
+\end{quote}
+
+\subsection{Rancangan Solusi}
+
+\begin{quote}
+Tahap persiapan penelitian dilakukan untuk memperoleh data yang merepresentasikan dinamika sinkronisasi sistem pada berbagai kondisi beban. Data ini digunakan untuk identifikasi hubungan antara kondisi sistem dan parameter sinkronisasi, serta sebagai dasar pelatihan model pembelajaran berbasis data. Seluruh proses persiapan dirancang agar konsisten dengan tujuan pengendalian dan metrik evaluasi yang digunakan pada tahap pengujian.
+\end{quote}
+
+\subsubsection{\textbf{Eksperimen Open-Loop dan Identifikasi Sistem}
+
+\begin{quote}
+Eksperimen open-loop dilakukan dengan menjalankan sistem sinkronisasi tanpa mekanisme pengendalian adaptif aktif. Parameter sinkronisasi diatur secara manual dan divariasikan dalam rentang yang telah ditentukan, sementara kondisi sistem diamati dan dicatat secara periodik. Pendekatan ini dipilih untuk memastikan bahwa hubungan sebab akibat antara parameter sinkronisasi dan respons sistem dapat diamati secara langsung, tanpa dipengaruhi oleh umpan balik pengendali.
+
+Pada setiap interval pengamatan, kondisi sistem dicatat sebagai vektor state yang mencakup backlog event, utilisasi CPU, utilisasi memori, dan intensitas operasi I/O pada read database. Secara bersamaan, parameter kontrol berupa batch size dan poll interval dicatat sebagai bagian dari konfigurasi eksperimen. Pengukuran dilakukan pada interval waktu yang tetap untuk menjaga konsistensi temporal antar variabel.
+
+Eksperimen dijalankan pada beberapa skenario beban yang berbeda, termasuk beban rendah, sedang, dan tinggi. Untuk setiap skenario, beberapa kombinasi parameter sinkronisasi diuji dan dijalankan selama jendela waktu observasi yang sama. Selama periode tersebut, metrik performa seperti perubahan backlog, latensi sinkronisasi, dan utilisasi sumber daya dicatat untuk dianalisis lebih lanjut. Data tersebut dimanfaatkan untuk mengamati karakteristik dinamika sistem dan merancang matriks kontrol.
+\end{quote}
+
+\subsubsection{\textbf{Definisi Aksi Kontrol Optimal}
+
+\begin{quote}
+Aksi kontrol optimal \emph{u\textsuperscript{*}(t)} didefinisikan sebagai parameter sinkronisasi yang menghasilkan kinerja terbaik untuk suatu kondisi sistem tertentu berdasarkan tujuan pengendalian yang telah ditetapkan. Dalam penelitian ini, definisi optimal tidak diartikan sebagai minimisasi satu metrik secara terpisah, melainkan sebagai pencapaian keseimbangan antara backlog, latensi sinkronisasi, dan pemanfaatan sumber daya dalam suatu horizon pengamatan yang terbatas.
+
+Secara formal, untuk kondisi sistem x(t), aksi kontrol optimal didefinisikan sebagai
+\end{quote}
+
+
+\begin{quote}
+di mana \emph{U} adalah himpunan kandidat aksi kontrol yang memenuhi batas operasional sistem, dan \emph{J} adalah fungsi biaya yang merepresentasikan tujuan pengendalian. Fungsi biaya dirumuskan pada dengan rumus II.2
+
+Pada suatu kondisi awal sistem \emph{u\textsuperscript{*}(t)} yang diamati, beberapa kombinasi parameter sinkronisasi, yaitu batch size dan poll interval, diuji secara terpisah. Selama satu periode pengamatan, aksi kontrol dijaga tetap konstan untuk setiap kombinasi yang diuji, sementara respons sistem dicatat secara periodik. Nilai fungsi biaya kemudian dihitung dari respons tersebut, dan kombinasi parameter yang menghasilkan nilai fungsi biaya minimum ditetapkan sebagai aksi kontrol optimal untuk kondisi sistem tersebut.
+
+Pendekatan ini memastikan bahwa definisi \emph{u\textsuperscript{*}(t)} konsisten dengan tujuan pengendalian LQR, meskipun diperoleh melalui evaluasi empiris. Dengan demikian, \emph{u\textsuperscript{*}(t)} merepresentasikan aksi kontrol yang paling seimbang untuk kondisi sistem tertentu dalam batas asumsi dan horizon pengamatan yang digunakan, serta dapat digunakan sebagai acuan dalam analisis performa dan perbandingan pada tahap evaluasi.
+\end{quote}
+
+\subsection{Desain eksperimen dan skenarion pengujian}
+
+\begin{quote}
+Desain eksperimen pada penelitian ini bertujuan untuk mengevaluasi efektivitas pengendalian sinkronisasi data berbasis LQR dalam berbagai kondisi operasional sistem. Eksperimen dirancang secara terkontrol agar hasil yang diperoleh mencerminkan pengaruh langsung dari mekanisme pengendalian terhadap dinamika sinkronisasi, bukan akibat perubahan lingkungan atau konfigurasi sistem yang tidak relevan.
+
+Eksperimen dilakukan dengan menjalankan sistem CQRS pada lingkungan uji yang konsisten, dengan konfigurasi perangkat keras, skema data, dan logika materialisasi read model yang dijaga tetap. Variasi yang diperkenalkan dalam eksperimen dibatasi pada skenario beban dan parameter pengendalian yang menjadi fokus penelitian. Pendekatan ini memastikan validitas internal eksperimen dan memungkinkan interpretasi hasil yang lebih jelas.
+\end{quote}
+
+\subsubsection{\textbf{Lingkungan Uji}
+
+\begin{quote}
+Lingkungan uji dirancang untuk merepresentasikan kondisi operasional sistem sinkronisasi data berbasis CQRS secara realistis dan terkontrol. Seluruh eksperimen dijalankan pada arsitektur yang sama untuk memastikan bahwa perbedaan kinerja yang diamati berasal dari mekanisme pengendalian, bukan dari perubahan konfigurasi sistem atau lingkungan eksekusi.
+
+% [Image removed from draft]
+
+Gambar III.2 Arsitektur Desain yang akan diuji
+
+Arsitektur sistem uji terdiri dari empat komponen utama, yaitu write model sebagai sumber perubahan data, message broker sebagai media distribusi event, message sink sebagai konsumer event sekaligus titik penerapan kontrol, dan read database sebagai target materialisasi data. Alur sinkronisasi dimulai dari operasi tulis pada write model yang menghasilkan event perubahan data, kemudian event tersebut dipublikasikan ke message broker dan dikonsumsi oleh message sink untuk diproses secara bertahap sebelum diterapkan ke read database.
+
+Mekanisme kontrol LQR ditempatkan pada message sink karena komponen ini memiliki peran langsung dalam menentukan laju konsumsi event dan intensitas beban yang diberikan ke read database. Parameter sinkronisasi yang dikendalikan meliputi batch size dan poll interval, yang secara langsung memengaruhi jumlah event yang diproses dalam satu siklus serta frekuensi pemrosesan. Dengan menempatkan kontrol pada message sink, sistem memperoleh fleksibilitas untuk menyesuaikan laju sinkronisasi tanpa mengganggu logika bisnis pada write model maupun pola akses pada sisi baca.
+
+Selama eksperimen, konfigurasi perangkat keras dan perangkat lunak dijaga tetap. Kapasitas CPU, memori, dan penyimpanan tidak diubah, demikian pula versi sistem operasi, message broker, dan basis data yang digunakan. Skema data pada write model dan read database serta logika materialisasi data juga tidak mengalami perubahan. Pendekatan ini dilakukan untuk menjaga validitas internal eksperimen dan memastikan bahwa dinamika sistem yang diamati mencerminkan pengaruh pengendalian terhadap proses sinkronisasi.
+
+Sebelum setiap eksperimen dimulai, sistem dijalankan hingga mencapai kondisi awal yang stabil dengan konfigurasi parameter sinkronisasi default. Periode stabilisasi ini bertujuan untuk menghindari pengaruh transien awal sistem terhadap hasil pengukuran. Setelah kondisi awal tercapai, mekanisme kontrol LQR diaktifkan dan eksperimen dijalankan sesuai dengan skenario beban yang telah ditentukan.
+\end{quote}
+
+\subsubsection{\textbf{Perancangan Skenario Beban}
+
+\begin{quote}
+Skenario beban dirancang untuk mengevaluasi kinerja pengendalian sinkronisasi data berbasis LQR pada berbagai kondisi operasional dan pola perubahan beban. Selain variasi tingkat beban, penelitian ini juga mempertimbangkan karakteristik temporal perubahan beban karena respons sistem kendali sangat dipengaruhi oleh bagaimana beban berubah terhadap waktu.
+\end{quote}
+
+
+\begin{quote}
+Gambar III.3 Simulasi beban dengan beberapa skenario fungsi (a) fungsi \emph{step}, (b) fungsi \emph{ramp}, (c) fungsi \emph{impulse} dan (d) fungsi \emph{step} yang berulang
+
+Skenario beban dengan pola \emph{step} digunakan untuk merepresentasikan perubahan beban yang terjadi secara tiba-tiba, misalnya lonjakan laju produksi event akibat peningkatan trafik secara mendadak. Pola ini digunakan untuk mengamati respons transien sistem, khususnya waktu respons awal, kenaikan backlog, dan kemampuan pengendalian dalam meredam lonjakan beban secara cepat.
+
+Pola \emph{ramp} digunakan untuk merepresentasikan perubahan beban yang meningkat atau menurun secara bertahap. Pola ini mencerminkan kondisi pertumbuhan trafik yang progresif dan memungkinkan evaluasi kemampuan pengendalian dalam menyesuaikan parameter sinkronisasi secara gradual tanpa menimbulkan osilasi yang berlebihan.
+
+Pola \emph{impulse} digunakan untuk merepresentasikan lonjakan beban sesaat dengan durasi singkat (\emph{short burst}), yang kemudian diikuti oleh kembalinya beban ke kondisi awal. Pola ini bertujuan untuk mengamati sensitivitas sistem terhadap gangguan sementara dan kemampuan pengendalian dalam memulihkan kondisi sistem setelah gangguan terjadi.
+
+Selain itu, digunakan pola \emph{step periodik} untuk merepresentasikan perubahan beban yang berulang antara dua tingkat tertentu dalam interval waktu tetap. Pola ini digunakan untuk mengevaluasi stabilitas jangka menengah sistem pengendalian serta potensi munculnya osilasi akibat perubahan beban yang berulang. Pengamatan pada skenario ini difokuskan pada konsistensi respons sistem dan kemampuan pengendalian dalam mempertahankan performa yang stabil pada siklus beban yang berulang. Dengan menggunakan kombinasi keempat pola beban tersebut, eksperimen diharapkan mampu memberikan gambaran yang komprehensif mengenai respons dinamis dan stabilitas pengendalian sinkronisasi pada berbagai kondisi operasional yang relevan.
+\end{quote}
+
+\subsection{Metrik Evaluasi Kerja}
+
+\begin{quote}
+Evaluasi kinerja dalam penelitian ini dilakukan untuk menilai sejauh mana mekanisme pengendalian berbasis Linear Quadratic Regulator (LQR) mampu menjaga keseimbangan antara kualitas sinkronisasi data dan efisiensi penggunaan sumber daya sistem. Oleh karena itu, metrik evaluasi dipilih secara selektif agar dapat merepresentasikan tujuan pengendalian yang telah dirumuskan pada tahap perancangan solusi, serta mampu menangkap respons sistem pada berbagai kondisi beban dan pola perubahan beban.
+
+Metrik evaluasi dikelompokkan berdasarkan perannya dalam analisis kinerja sistem, meliputi metrik inti kinerja sinkronisasi, metrik dinamika kontrol, metrik efisiensi pemrosesan, dan metrik biaya kontrol. Pengelompokan ini bertujuan untuk memisahkan pengukuran kualitas sinkronisasi, karakteristik respons dinamis, efisiensi operasional, dan kesesuaian solusi terhadap formulasi optimasi yang digunakan. Seluruh metrik diukur secara periodik selama eksperimen dan digunakan secara konsisten sebagai dasar analisis dan perbandingan pada bab hasil dan pembahasan.
+\end{quote}
+
+\subsubsection{\textbf{Metrik Inti Kinerja Sinkronisasi}
+
+\begin{quote}
+Metrik inti kinerja sinkronisasi digunakan untuk mengevaluasi kualitas dasar proses sinkronisasi data pada arsitektur CQRS. Metrik ini dipilih karena secara langsung merepresentasikan tujuan utama pengendalian, yaitu menjaga konsistensi data dan kestabilan sistem pada berbagai kondisi beban. Seluruh metrik inti diukur secara periodik selama eksperimen dan dianalisis baik pada kondisi tunak maupun transien.
+
+Backlog sinkronisasi digunakan sebagai indikator utama untuk mengukur tingkat ketertinggalan proses sinkronisasi. Backlog didefinisikan sebagai jumlah event yang telah dihasilkan oleh write model tetapi belum diproses oleh message sink pada suatu waktu tertentu. Nilai backlog yang tinggi menunjukkan ketidakseimbangan antara laju produksi dan konsumsi event, sedangkan pengendalian yang efektif ditunjukkan oleh kemampuan menekan pertumbuhan backlog dan mempercepat pemulihannya setelah terjadi gangguan. Backlog diukur dalam satuan jumlah event, dengan analisis mencakup nilai rata rata, nilai maksimum, dan waktu pemulihan menuju kondisi referensi.
+
+Latensi sinkronisasi digunakan untuk mengukur keterlambatan propagasi perubahan data dari write model hingga perubahan tersebut tersedia pada read database. Latensi ini mencerminkan konsistensi data yang dapat diamati oleh pengguna dan berhubungan langsung dengan kualitas layanan sistem. Pengukuran latensi dilakukan dengan mencatat selisih waktu antara timestamp event pada sisi tulis dan waktu penerapan perubahan pada sisi baca. Satuan yang digunakan adalah milidetik atau detik, dengan analisis meliputi nilai rata rata dan nilai maksimum selama periode eksperimen.
+
+Utilisasi sumber daya digunakan untuk mengevaluasi dampak pengendalian terhadap kapasitas sistem, khususnya pada komponen read database yang menjadi target materialisasi data. Metrik ini mencakup utilisasi CPU, penggunaan memori, dan aktivitas I/O selama proses sinkronisasi berlangsung. Utilisasi CPU dan memori diukur dalam persen, sedangkan aktivitas I/O diukur dalam operasi per detik atau jumlah data yang diproses per satuan waktu. Metrik ini digunakan untuk memastikan bahwa pengendalian mampu menjaga keseimbangan antara peningkatan laju sinkronisasi dan keterbatasan sumber daya sistem.
+\end{quote}
+
+
+\begin{quote}
+Tabel III.1 Metrik kinerja sinkronisasi
+\end{quote}
+
+\subsubsection{\textbf{Metrik Dinamika Kontrol}
+
+\begin{quote}
+Metrik dinamika kontrol digunakan untuk mengevaluasi karakteristik respons sistem terhadap perubahan beban, khususnya pada kondisi transien seperti pola step, ramp, impulse, dan step periodik. Berbeda dengan metrik inti yang menilai kualitas sinkronisasi secara umum, metrik dinamika kontrol berfokus pada bagaimana sistem bereaksi terhadap gangguan dan seberapa cepat sistem kembali ke kondisi yang diinginkan. Metrik ini sangat relevan dalam konteks pengendalian berbasis LQR karena secara langsung mencerminkan kualitas respons kendali yang dihasilkan.
+
+Evaluasi dinamika kontrol dilakukan dengan mengamati perilaku temporal backlog sebagai variabel state utama. Respons backlog terhadap perubahan beban digunakan untuk menilai kecepatan respons, tingkat agresivitas pengendalian, dan kestabilan menuju kondisi referensi. Dengan menggunakan metrik dinamika kontrol, penelitian ini dapat membedakan pengendalian yang cepat namun berisiko agresif dari pengendalian yang lebih stabil dan terkontrol.
+\end{quote}
+
+
+\begin{quote}
+Tabel III.2 Metrik dinamika kontrol
+
+Rise time digunakan untuk mengukur kecepatan respons pengendalian terhadap gangguan beban. Nilai rise time yang kecil menunjukkan bahwa mekanisme kontrol mampu merespons perubahan kondisi sistem secara cepat. Namun, respons yang terlalu cepat dapat meningkatkan risiko overshoot, sehingga rise time perlu dianalisis bersamaan dengan metrik lainnya.
+
+Overshoot merepresentasikan tingkat agresivitas pengendalian setelah terjadi perubahan beban. Overshoot yang besar menunjukkan bahwa pengendalian memberikan respons berlebihan, yang berpotensi meningkatkan tekanan terhadap sistem. Dalam konteks sinkronisasi data, overshoot backlog yang tinggi dapat mengindikasikan risiko overload sementara pada read database.
+
+Settling time digunakan untuk mengevaluasi kestabilan respons pengendalian. Metrik ini menunjukkan berapa lama sistem membutuhkan waktu untuk kembali dan bertahan pada kondisi yang mendekati nilai referensi setelah gangguan terjadi. Settling time yang singkat tanpa overshoot berlebihan menunjukkan karakteristik pengendalian yang stabil dan efektif.
+\end{quote}
+
+\subsubsection{}
+
+\subsubsection{\textbf{Metrik Efisiensi Pemrosesan}
+
+\begin{quote}
+Metrik efisiensi pemrosesan digunakan untuk mengevaluasi sejauh mana mekanisme pengendalian sinkronisasi mampu meningkatkan kinerja pemrosesan event tanpa mengorbankan efisiensi penggunaan sumber daya. Dalam konteks sistem CQRS, pengendalian yang efektif tidak hanya ditunjukkan oleh penurunan backlog atau latensi, tetapi juga oleh kemampuan sistem dalam memproses event secara efisien dengan sumber daya yang tersedia.
+
+Evaluasi efisiensi pemrosesan penting karena pengendalian yang terlalu agresif dapat meningkatkan throughput dalam jangka pendek, tetapi berpotensi menimbulkan pemborosan sumber daya atau tekanan berlebihan pada sistem. Oleh karena itu, metrik efisiensi digunakan untuk menilai keseimbangan antara kapasitas pemrosesan yang dicapai dan biaya sumber daya yang dikeluarkan selama proses sinkronisasi berlangsung.
+\end{quote}
+
+
+\begin{quote}
+Tabel III.3 Metrik efisiensi pemrosesan
+
+Throughput pemrosesan digunakan untuk mengukur kapasitas sistem dalam memproses event selama proses sinkronisasi. Nilai throughput yang tinggi menunjukkan bahwa sistem mampu menangani laju event yang besar, namun metrik ini perlu dianalisis bersamaan dengan utilisasi sumber daya agar tidak menimbulkan interpretasi yang menyesatkan.
+
+Efisiensi CPU dan efisiensi memori digunakan untuk mengevaluasi seberapa efektif sumber daya sistem dimanfaatkan dalam mendukung proses sinkronisasi. Nilai efisiensi yang tinggi menunjukkan bahwa peningkatan throughput dicapai dengan penggunaan sumber daya yang relatif efisien. Dengan mengombinasikan metrik throughput dan efisiensi sumber daya, evaluasi kinerja tidak hanya berfokus pada kecepatan pemrosesan, tetapi juga pada keberlanjutan operasional sistem.
+\end{quote}
+
+\subsubsection{\textbf{Metrik Biaya Kontrol}
+
+\begin{quote}
+Metrik biaya kontrol digunakan untuk mengevaluasi kinerja pengendalian dari sudut pandang optimasi yang mendasari perancangan Linear Quadratic Regulator (LQR). Berbeda dengan metrik kinerja dan efisiensi yang menilai dampak pengendalian pada sistem secara eksternal, metrik biaya kontrol menilai sejauh mana kebijakan kontrol yang diterapkan selaras dengan tujuan optimasi yang telah diformulasikan melalui fungsi biaya.
+
+Evaluasi biaya kontrol penting untuk memastikan bahwa perbaikan kinerja sinkronisasi tidak dicapai melalui aksi kontrol yang berlebihan. Dalam konteks ini, biaya kontrol digunakan untuk mengukur keseimbangan antara perbaikan kondisi sistem dan besarnya aksi kontrol yang diterapkan. Dengan menganalisis nilai biaya kontrol, penelitian ini dapat menilai konsistensi perilaku pengendalian LQR terhadap tujuan optimasi yang dirancang
+\end{quote}
+
+
+\begin{quote}
+Tabel III.4 Metrik biaya kontrol
+
+Nilai fungsi biaya digunakan sebagai indikator utama untuk mengevaluasi performa pengendalian LQR dari perspektif optimasi. Nilai fungsi biaya yang lebih rendah menunjukkan bahwa sistem berada lebih dekat dengan kondisi yang diinginkan dengan besaran aksi kontrol yang relatif terkendali.
+
+Biaya state digunakan untuk menilai sejauh mana kondisi sistem menyimpang dari nilai referensi selama proses sinkronisasi. Nilai biaya state yang tinggi mengindikasikan bahwa sistem sering berada jauh dari kondisi target, misalnya akibat backlog yang besar atau utilisasi sumber daya yang berlebihan.
+
+Biaya aksi kontrol digunakan untuk mengevaluasi tingkat agresivitas pengendalian. Nilai biaya aksi kontrol yang tinggi menunjukkan bahwa perbaikan kondisi sistem dicapai melalui perubahan parameter sinkronisasi yang besar atau sering. Dengan menganalisis kedua komponen biaya secara terpisah, penelitian ini dapat mengevaluasi keseimbangan antara kualitas sinkronisasi dan intensitas aksi kontrol yang diterapkan.
+\end{quote}
+
+DAFTAR PUSTAKA
+
+CQRS, data diperoleh melalui situs internet: https://martinfowler.com/bliki/CQRS.html. Diunduh pada tanggal 6 Juni 2025.
+
+Vogels, W. (2009). Eventually Consistent. \emph{Communications of the ACM}, 40--44.
+
+Kindsoon, Munoye., Martinek, Péter (2023): A Simplified Approach to Distributed Message Handling in a CQRS Architecture, \emph{Acta Polytechnica Hungarica.}
+
+Armag˘an, Özgür., Gören-Sümer, Leyla (2014): Feedback control for multi-resource usage of virtualized database server, \emph{Computers and Electrical Engineering.}
+
+Pan, Wenping., Mu, Dejun., Wu, Hangxing., Yao, Lei (2008): Feedback Control-based QoS Guarantees in Web Application Servers, \emph{IEEE International Conference on High Performance Computing and Communications.}
+
+Das, T., Zhong, Y., Stoica, I., Shenker, S., dan Zaharia, M. (2018): Adaptive stream processing using dynamic batch sizing, \emph{Proceedings of the ACM Symposium on Cloud Computing.}
+
+Gong, Siqian., Yin, Beibei., Cai, Kai-yuan (2018): An Adaptive PID Control for QoS Management in Cloud Computing System, \emph{IEEE International Symposium on Software Reliability Engineering Workshops.}
+
+Wu, Han., Shang, Zhiao., Guang, Peng., Wolter, Katinka (2020). A Reactive Batching Strategy of Apache Kafka for Reliable Stream Processing in Real-time, \emph{IEEE International Symposium on Software Reliability Engineering.}
+
+ZangLong (2017). Improvement and Implementation of a High Performance CQRS Architecture, \emph{International Conference on Robots \& Intelligent System..}
+
+Bailis, Peter., Venkataraman, Shivaram., Franklin, Michael J., Hellerstein, Joseph M., Stoica, Ion (2017). Probabilistically Bounded Staleness for Practical Partial Quorums, \emph{International Conference on Robots \& Intelligent System.}
+
+Kindsoon, Munoye., Martinek, Péter (2020). Evaluation of Data Storage Patterns in Microservices Archicture, \emph{IEEE 15th International Conference of System of Systems Engineering}
+
+Ogata, K. (2010). \emph{Modern Control Engineering} (5th ed.). Prentice Hall. 793--798
+
+Kleppmann, M. (2017). \emph{Designing Data-Intensive Applications: The Big Ideas Behind Reliable, Scalable, and Maintainable Systems}. O'Reilly Media. 389-391
+
+Ljung, L. (1999): \emph{System identification: Theory for the user}, 2nd ed., Prentice Hall, Upper Saddle River
+
+Newman, S. (2015). \emph{Building Microservices: Designing Fine-Grained Systems}. O'Reilly Media. 193--198
+
+Brewer, E. (2000). Towards Robust Distributed Systems. \emph{Proceedings of the Annual ACM Symposium on Principles of Distributed Computing (PODC)}.

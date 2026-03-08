@@ -1,0 +1,99 @@
+\chapter{Tinjauan Pustaka}
+
+\section{Arsitektur Command Query Responsibility Segregation (CQRS)}
+
+\section{Arsitektur Command Query Responsibility Segregation (CQRS)}
+
+\begin{quote}
+Command Query Responsibility Segregation (CQRS) adalah pola desain arsitektur yang memisahkan tanggung jawab antara operasi yang mengubah data (\emph{command}) dan operasi yang membaca data (\emph{query}). Arsitektur ini memungkinkan pemisahan model data untuk \emph{query} tulis dan baca, sehingga masing-masing \emph{query} dapat dioptimalkan sesuai kebutuhan (Fowler, 2011).
+
+Keunggulan utama penerapan CQRS diantaranya peningkatan modularitas, skalabilitas dan kinerja sistem, karena operasi baca dan tulis dapat dipisahkan (Fowler, 2011). Selain itu, pemisahan ini memungkinkan pengembangan dan pemeliharaan yang lebih mudah, karena tim dapat fokus pada aspek spesifik tanpa mempengaruhi keseluruhan sistem. Namun, tantangan yang muncul antara lain peningkatan kompleksitas arsitektur dan kebutuhan untuk mengelola konsistensi data antara model baca dan tulis. Kedua model data tersebut harus tersinkronisasi melalu event handler yang mengubah database baca (Munonye, 2020)
+\end{quote}
+
+\section{Sinkronisasi Data dan Stream Processing pada Sistem Terdistribusi}
+
+\begin{quote}
+Sinkronisasi data merupakan komponen kunci dalam sistem terdistribusi yang memisahkan komponen penghasil data dan komponen yang mengonsumsi data secara asinkron. Pada sistem berskala besar, perubahan data tidak selalu dapat langsung direfleksikan ke seluruh komponen sistem secara serentak, sehingga diperlukan mekanisme propagasi perubahan yang mampu menangani perbedaan laju produksi dan konsumsi data. Kondisi ini menyebabkan sinkronisasi data tidak hanya bergantung pada konsistensi logis, tetapi juga pada karakteristik waktu, beban sistem, dan kapasitas pemrosesan masing-masing komponen (Tanenbaum dan van Steen, 2017).
+
+Dalam konteks arsitektur berbasis event-driven, sinkronisasi data umumnya dilakukan melalui mekanisme stream processing, di mana setiap perubahan data direpresentasikan sebagai event yang dipublikasikan ke message broker. Event-event ini kemudian diproses secara berurutan atau berkelompok oleh komponen konsumer untuk memperbarui state pada sistem tujuan, seperti read model pada arsitektur CQRS. Pendekatan ini memungkinkan pemrosesan data secara near real-time, sekaligus menjaga loose coupling antar komponen sistem (Kleppmann, 2017).
+
+Stream processing berada di antara pendekatan batch processing dan online processing. Berbeda dengan batch processing tradisional yang menunggu akumulasi data dalam jumlah besar sebelum diproses, stream processing memproses data secara kontinu seiring dengan kedatangan event. Namun, dalam praktiknya, pemrosesan event hampir selalu dilakukan dalam bentuk micro-batching untuk meningkatkan efisiensi I/O dan mengurangi overhead pemrosesan per event (Das, 2018). Keputusan mengenai ukuran batch dan frekuensi pemrosesan ini menjadi faktor penting yang memengaruhi performa sinkronisasi.
+
+Pada sistem sinkronisasi data, terutama pada arsitektur CQRS, perbedaan laju antara produksi event di write model dan konsumsi event di read model dapat menimbulkan backlog pada message broker. Backlog ini bersifat dinamis dan sangat dipengaruhi oleh pola beban kerja, konfigurasi batch size, serta kondisi sumber daya pada sistem tujuan. Ketika backlog meningkat, latensi sinkronisasi juga meningkat, yang pada akhirnya dapat menyebabkan ketidaksesuaian sementara antara data tulis dan data baca (Kleppmann, 2017; Newman, 2015).
+
+Selain itu, proses sinkronisasi data juga berdampak langsung pada utilisasi sumber daya sistem, khususnya pada database baca. Pemrosesan batch yang terlalu besar dapat menyebabkan lonjakan penggunaan CPU, memori, dan operasi I/O, sementara batch yang terlalu kecil dapat meningkatkan overhead pemrosesan dan menurunkan throughput secara keseluruhan. Hal ini menunjukkan adanya trade-off antara kecepatan propagasi data dan stabilitas penggunaan sumber daya, yang tidak dapat diselesaikan secara optimal dengan konfigurasi statik (Wu et al., 2020).
+
+Berdasarkan karakteristik tersebut, sinkronisasi data pada sistem terdistribusi, khususnya yang berbasis stream processing dan CQRS, dapat dipandang sebagai proses yang bersifat dinamis dan berubah terhadap waktu. Kondisi sistem pada satu waktu memengaruhi efektivitas keputusan sinkronisasi pada waktu berikutnya, sehingga mekanisme penyesuaian parameter sinkronisasi perlu mempertimbangkan respons sistem secara berkelanjutan. Pandangan ini menjadi dasar untuk memodelkan sinkronisasi data sebagai sistem dinamis, yang selanjutnya membuka ruang bagi penerapan pendekatan pengendalian pada bab-bab berikutnya.
+\end{quote}
+
+\section{Batching, Backlog, dan Dampaknya terhadap Kinerja Sistem}
+
+\begin{quote}
+Dalam sistem sinkronisasi data berbasis stream processing, pemrosesan event umumnya dilakukan dalam bentuk batch atau micro-batch untuk mengurangi overhead komputasi dan operasi I/O. Penggunaan batching memungkinkan peningkatan throughput karena beberapa event dapat diproses secara bersamaan, namun keputusan mengenai ukuran batch dan frekuensi pemrosesan secara langsung memengaruhi latensi sinkronisasi dan perilaku sistem secara keseluruhan (Das et al., 2018).
+
+Ukuran batch yang lebih besar cenderung meningkatkan efisiensi pemrosesan, tetapi juga menyebabkan event menunggu lebih lama sebelum diproses, sehingga latensi sinkronisasi meningkat. Sebaliknya, batch berukuran kecil dapat menurunkan latensi, tetapi meningkatkan overhead pemrosesan per event dan menurunkan efisiensi sistem. Kondisi ini menunjukkan adanya trade-off antara kecepatan propagasi data dan efisiensi pemrosesan, yang tidak dapat dioptimalkan secara bersamaan melalui satu konfigurasi statik (Kleppmann, 2017).
+
+Backlog muncul ketika laju produksi event melebihi kemampuan sistem dalam memproses event tersebut. Backlog bersifat dinamis dan dipengaruhi oleh pola beban kerja, pengaturan batch, serta kondisi sumber daya pada sistem tujuan. Peningkatan backlog tidak hanya meningkatkan latensi sinkronisasi, tetapi juga berpotensi memicu lonjakan utilisasi CPU, memori, dan operasi I/O pada database baca ketika batch diproses dalam jumlah besar (Tanenbaum dan van Steen, 2017).
+
+Penelitian terdahulu menunjukkan bahwa pengaturan batch secara statik sulit mempertahankan performa yang stabil pada kondisi beban yang berubah. Parameter batch yang optimal pada satu kondisi dapat menjadi tidak efektif pada kondisi lain, sehingga pengaturan batch dan pemantauan backlog perlu dipandang sebagai bagian dari sistem yang bersifat dinamis. Pandangan ini menjadi dasar untuk memodelkan proses sinkronisasi data sebagai sistem dinamis, yang membuka ruang bagi pendekatan pengendalian adaptif pada bab-bab selanjutnya (Wu dkk., 2020).
+\end{quote}
+
+\section{Pengendalian Umpan Balik dalam Sistem Perangkat Lunak}
+
+\begin{quote}
+Pengendalian umpan balik merupakan pendekatan yang digunakan untuk mengatur perilaku sistem agar tetap stabil dan optimal dengan menyesuaikan parameter-parameter kontrol berdasarkan pengamatan kondisi sistem dan deviasi dengan nilai yang diinginkan secara real-time (Ogata, 2010). Dalam konteks sistem sinkronisasi basis data, pengendalian umpan balik memungkinkan sistem untuk mengatur aspek-aspek seperti konsumsi sumber daya atau laju eksekusi proses mengikuti perubahan kondisi lingkungan seperti beban kerja maupun \emph{latency} dari infrastruktur.
+
+Salah satu alasan pendekatan ini relevan dalam sistem perangkat lunak modern adalah karena sistem perangkat lunak modern semakin bersifat kompleks, sehingga konfigurasi secara static tidak dapat selalu menjadi yang optimal. Untuk mengatasi hal ini, digunakan sistem kontrol berbasis \emph{feedback loop} yang dapat bereaksi terhadap deviasi dari performa yang diinginkan. Pengendalian seperti ini telah diterapkan pada pengaturan throughput layanan cloud, alokasi dinamis memori, dan pengendalian autoscaling sistem.
+\end{quote}
+
+\subsection{Teori Kontrol pada Sistem Perangkat Lunak}
+
+\begin{quote}
+Teori kontrol merupakan disiplin ilmu yang membahas bagaimana suatu sistem dapat mengatur dirinya sendiri berdasarkan sinyal umpan balik (\emph{feedback}). Secara prinsip, teori kontrol bekerja dengan cara mengukur deviasi antara kondisi aktual sistem dengan kondisi yang diharapkan (\emph{setpoint}), lalu menghasilkan tindakan perbaikan untuk meminimalkan perbedaan tersebut (Ogata, 2010).
+
+Dalam sistem perangkat lunak, sinyal umpan balik dapat berupa metrik runtime seperti penggunaan CPU, backlog antrian data, \emph{response time}. Dengan menggunakan pengendali yang sesuai, sistem dapat mengubah parameter konfigurasinya, seperti ukuran batch, atau frekuensi polling, agar kinerja sistem tetap stabil meskipun kondisi eksternal berubah. Pendekatan seperti ini sangat relevan dalam arsitektur modern yang bersifat elastis dan skalabel, serta ketika sistem perlu menyeimbangkan antara dua tujuan yang saling bertentangan misalnya performa dan konsistensi data.
+
+Model formal dari sistem yang dikendalikan biasanya dinyatakan dalam bentuk \emph{state-space representation}, di mana sistem digambarkan sebagai hubungan linier antara status saat ini, aksi kontrol, dan status selanjutnya:
+
+\[x_{t + 1} = Ax_{t} + Bu_{t}\]
+
+\[y_{t} = Cx_{t} + Du_{t}\]
+
+Dalam konteks sistem sinkronisasi data, status sistem \emph{x} dapat berupa utilitas cpu, jumlah antrian pesan, atau utilisasi memori, sedangkan \emph{u} adalah tindakan yang bisa diambil sistem seperti memperbesar batch atau memperpanjang interval polling. Matriks \emph{A} dan \emph{B} menggambarkan dinamika sistem, yaitu bagaimana sistem berubah sebagai akibat dari tindakan yang dilakukan. Sedangkan variabel pada vector \emph{y} dapat termati secara langsung dan biasanya merupakan \emph{subset} dari \emph{x}.
+
+Dengan pendekatan ini, kita tidak hanya bereaksi terhadap kondisi saat ini, tetapi juga mengoptimalkan tindakan agar sistem tetap berada dalam kondisi yang stabil dan efisien. Di sinilah pendekatan kontrol optimal seperti LQR menjadi sangat relevan.
+\end{quote}
+
+\subsection{Linear Quadratic Regulator}
+
+\begin{quote}
+Linear Quadratic Regulator (LQR) adalah salah satu teknik pengendalian optimal yang terkenal dan banyak digunakan dalam dunia teknik kendali. Keunggulan utama dari LQR adalah kemampuannya untuk secara matematis menyeimbangkan antara dua tujuan yang sering bertentangan yaitu meminimalkan kesalahan sistem dan meminimalkan usaha kontrol.
+
+Secara formal, LQR bertujuan untuk meminimalkan fungsi biaya kuadratik berikut ini:
+
+\[J = \sum_{t = 0}^{\infty}{x_{t}^{T}Qx_{t} + u_{t}^{T}Ru_{t}}\]
+
+Di mana:
+\end{quote}
+
+\begin{itemize}
+\item \(J:\) fungsi biaya
+\item \(x_{t}:\) status sistem saat ini (misalnya, antrian pesan atau tingkat utilisasi CPU),
+\item \(u_{t}:\) sinyal kontrol (misalnya, pengaturan batch size, poll interval),
+\item \(Q:\) bobot penalti terhadap kesalahan status sistem, berupa matriks definit positif,
+\item \(R:\) bobot penalti terhadap usaha pengendalian, berupa matriks definit positif.
+\end{itemize}
+
+\begin{quote}
+Solusi optimal dari fungsi biaya ini adalah hukum kontrol linier:
+
+\[u_{t} = - Kx_{t}\]
+
+dengan \emph{K} adalah matriks penguat (gain) yang diperoleh dari penyelesaian persamaan Riccati. Matriks ini menunjukkan seberapa besar tindakan korektif yang harus diambil untuk setiap kesalahan yang terdeteksi dalam status sistem.
+
+Pendekatan LQR cocok digunakan untuk sistem yang kompleks, linear dan bersifat multi input dan multi output (MIMO). Dalam sistem sinkronisasi yang kompleks, kita mungkin perlu mengontrol beberapa parameter sekaligus seperti batch size dan interval polling. Keduanya menentukan multi variable kontrol dan tidak dapat diatur secara independen. Pada kasus seperti ini, LQR memberikan kerangka kerja matematis yang sistematis untuk merancang pengendali yang mempertimbangkan semua variabel sekaligus.
+
+Namun, untuk menerapkan LQR, diperlukan pemodelan sistem terlebih dahulu. Hal ini dilakukan dengan cara melakukan eksperimen untuk merekam perubahan status sistem sebagai respons terhadap perubahan parameter kontrol, lalu menggunakan teknik estimasi seperti regresi linier atau metode identifikasi sistem (Ljung, 1999). Hasilnya berupa estimasi terhadap matriks A dan B, yang diperlukan untuk merancang kontroler LQR.
+
+Walaupun implementasinya lebih kompleks dibandingkan pendekatan seperti PID, LQR menawarkan keunggulan dalam hal kestabilan, keoptimalan, dan fleksibilitas. Penentuan parameter kontrol pada LQR juga lebih sesuai untuk diterapkan pada kondisi berbasis \emph{trade-off} karena didasarkan pada matriks biaya yang bisa diatur untuk menentukan variabel mana yang akan diunggulkan dibanding yang lain. Oleh karena itu, dalam sistem yang memerlukan kontrol presisi tinggi terhadap dinamika kompleks seperti dalam pengelolaan sinkronisasi data yang adaptif dan berbasis resource utilization LQR merupakan pilihan yang sangat menjanjikan.
+\end{quote}
