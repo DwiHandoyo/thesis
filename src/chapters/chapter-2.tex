@@ -10,6 +10,13 @@ Command Query Responsibility Segregation (CQRS) adalah pola desain arsitektur ya
 Keunggulan utama penerapan CQRS diantaranya peningkatan modularitas, skalabilitas dan kinerja sistem, karena operasi baca dan tulis dapat dipisahkan (Fowler, 2011). Selain itu, pemisahan ini memungkinkan pengembangan dan pemeliharaan yang lebih mudah, karena tim dapat fokus pada aspek spesifik tanpa mempengaruhi keseluruhan sistem. Namun, tantangan yang muncul antara lain peningkatan kompleksitas arsitektur dan kebutuhan untuk mengelola konsistensi data antara model baca dan tulis. Kedua model data tersebut harus tersinkronisasi melalu event handler yang mengubah database baca (Munonye, 2020)
 \end{quote}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{II_1__arsitektur_cqrs.png}
+    \caption{Arsitektur CQRS (Munonye, 2020)}
+    \label{fig:arsitektur-cqrs}
+\end{figure}
+
 \section{Sinkronisasi Data dan Stream Processing pada Sistem Terdistribusi}
 
 \begin{quote}
@@ -21,7 +28,7 @@ Stream processing berada di antara pendekatan batch processing dan online proces
 
 Pada sistem sinkronisasi data, terutama pada arsitektur CQRS, perbedaan laju antara produksi event di write model dan konsumsi event di read model dapat menimbulkan backlog pada message broker. Backlog ini bersifat dinamis dan sangat dipengaruhi oleh pola beban kerja, konfigurasi batch size, serta kondisi sumber daya pada sistem tujuan. Ketika backlog meningkat, latensi sinkronisasi juga meningkat, yang pada akhirnya dapat menyebabkan ketidaksesuaian sementara antara data tulis dan data baca (Kleppmann, 2017; Newman, 2015).
 
-Selain itu, proses sinkronisasi data juga berdampak langsung pada utilisasi sumber daya sistem, khususnya pada database baca. Pemrosesan batch yang terlalu besar dapat menyebabkan lonjakan penggunaan CPU, memori, dan operasi I/O, sementara batch yang terlalu kecil dapat meningkatkan overhead pemrosesan dan menurunkan throughput secara keseluruhan. Hal ini menunjukkan adanya trade-off antara kecepatan propagasi data dan stabilitas penggunaan sumber daya, yang tidak dapat diselesaikan secara optimal dengan konfigurasi statik (Wu et al., 2020).
+Selain itu, proses sinkronisasi data juga berdampak langsung pada utilisasi sumber daya sistem, khususnya pada database baca. Pemrosesan batch yang terlalu besar dapat menyebabkan lonjakan penggunaan CPU, memori, dan operasi I/O, sementara batch yang terlalu kecil dapat meningkatkan overhead pemrosesan dan menurunkan throughput secara keseluruhan. Hal ini menunjukkan adanya trade-off antara kecepatan propagasi data dan stabilitas penggunaan sumber daya, yang tidak dapat diselesaikan secara optimal dengan konfigurasi statik (Wu dkk., 2020).
 
 Berdasarkan karakteristik tersebut, sinkronisasi data pada sistem terdistribusi, khususnya yang berbasis stream processing dan CQRS, dapat dipandang sebagai proses yang bersifat dinamis dan berubah terhadap waktu. Kondisi sistem pada satu waktu memengaruhi efektivitas keputusan sinkronisasi pada waktu berikutnya, sehingga mekanisme penyesuaian parameter sinkronisasi perlu mempertimbangkan respons sistem secara berkelanjutan. Pandangan ini menjadi dasar untuk memodelkan sinkronisasi data sebagai sistem dinamis, yang selanjutnya membuka ruang bagi penerapan pendekatan pengendalian pada bab-bab berikutnya.
 \end{quote}
@@ -29,8 +36,17 @@ Berdasarkan karakteristik tersebut, sinkronisasi data pada sistem terdistribusi,
 \section{Batching, Backlog, dan Dampaknya terhadap Kinerja Sistem}
 
 \begin{quote}
-Dalam sistem sinkronisasi data berbasis stream processing, pemrosesan event umumnya dilakukan dalam bentuk batch atau micro-batch untuk mengurangi overhead komputasi dan operasi I/O. Penggunaan batching memungkinkan peningkatan throughput karena beberapa event dapat diproses secara bersamaan, namun keputusan mengenai ukuran batch dan frekuensi pemrosesan secara langsung memengaruhi latensi sinkronisasi dan perilaku sistem secara keseluruhan (Das et al., 2018).
+Dalam sistem sinkronisasi data berbasis stream processing, pemrosesan event umumnya dilakukan dalam bentuk batch atau micro-batch untuk mengurangi overhead komputasi dan operasi I/O. Penggunaan batching memungkinkan peningkatan throughput karena beberapa event dapat diproses secara bersamaan, namun keputusan mengenai ukuran batch dan frekuensi pemrosesan secara langsung memengaruhi latensi sinkronisasi dan perilaku sistem secara keseluruhan (Das dkk., 2018).
+\end{quote}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{II_2__micro_batch_processing.png}
+    \caption{Micro-batch Processing}
+    \label{fig:micro-batch-processing}
+\end{figure}
+
+\begin{quote}
 Ukuran batch yang lebih besar cenderung meningkatkan efisiensi pemrosesan, tetapi juga menyebabkan event menunggu lebih lama sebelum diproses, sehingga latensi sinkronisasi meningkat. Sebaliknya, batch berukuran kecil dapat menurunkan latensi, tetapi meningkatkan overhead pemrosesan per event dan menurunkan efisiensi sistem. Kondisi ini menunjukkan adanya trade-off antara kecepatan propagasi data dan efisiensi pemrosesan, yang tidak dapat dioptimalkan secara bersamaan melalui satu konfigurasi statik (Kleppmann, 2017).
 
 Backlog muncul ketika laju produksi event melebihi kemampuan sistem dalam memproses event tersebut. Backlog bersifat dinamis dan dipengaruhi oleh pola beban kerja, pengaturan batch, serta kondisi sumber daya pada sistem tujuan. Peningkatan backlog tidak hanya meningkatkan latensi sinkronisasi, tetapi juga berpotensi memicu lonjakan utilisasi CPU, memori, dan operasi I/O pada database baca ketika batch diproses dalam jumlah besar (Tanenbaum dan van Steen, 2017).
@@ -83,6 +99,13 @@ Di mana:
 \item \(Q:\) bobot penalti terhadap kesalahan status sistem, berupa matriks definit positif,
 \item \(R:\) bobot penalti terhadap usaha pengendalian, berupa matriks definit positif.
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{II_3_1__kontrol_lqr.png}
+    \caption{Kontrol LQR}
+    \label{fig:kontrol-lqr}
+\end{figure}
 
 \begin{quote}
 Solusi optimal dari fungsi biaya ini adalah hukum kontrol linier:

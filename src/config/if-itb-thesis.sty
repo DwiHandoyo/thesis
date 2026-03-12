@@ -17,6 +17,7 @@
 \usepackage[top=3cm,bottom=3cm,left=4cm,right=3cm]{geometry}
 
 % Math package
+\usepackage{amsmath}
 \usepackage{mathptmx}
 
 % 4th Sectioning
@@ -40,6 +41,7 @@
 % \usepackage[style=apa,backend=biber]{biblatex}
 \usepackage{longtable}
 \usepackage{graphicx}
+\usepackage[labelsep=space, justification=justified, singlelinecheck=true, format=hang]{caption}
 \usepackage{subfig}
 \usepackage{titling}
 \usepackage{booktabs}
@@ -196,12 +198,13 @@
 
 \makeatother
 
-% Counter untuk figure dan table.
+% Counter untuk figure, table, dan equation per bab
 \counterwithin{figure}{chapter}
 \counterwithin{table}{chapter}
+\counterwithin{equation}{chapter}
 
 % Define blank page
-\newcommand*{\blankpage}{\afterpage{\null\newpage}}
+\newcommand*{\blankpage}{\afterpage{\null\thispagestyle{empty}\newpage}}
 
 % Define after paragraph space
 \setlength{\parskip}{1\baselineskip} % space after paragraph

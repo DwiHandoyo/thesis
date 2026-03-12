@@ -37,6 +37,7 @@
 \setcounter{page}{0}
 
 \input{chapters/cover}
+\thispagestyle{empty}
 \input{chapters/approval-1} % 1 PEMBIMBING PAKAI INI
 % \input{chapters/approval-2} % 2 PEMBIMBING PAKAI INI
 
@@ -46,6 +47,7 @@
 \input{chapters/abstract-en}
 \input{chapters/instruction}
 \input{chapters/forewords}
+\pagestyle{plain}
 
 \titleformat*{\section}{\bfseries\normalsize}
 \titlespacing*{\chapter}{0pt}{0pt}{1.5pc}
@@ -90,8 +92,8 @@
 %----------------------------------------------------------------%
 
 % Daftar pustaka
-% \printbibliography
-% \blankpage
+\blankpage
+\input{chapters/references}
 
 % Setting judul lampiran
 \titlespacing*{\chapter}{0pt}{0pt}{0pt}
