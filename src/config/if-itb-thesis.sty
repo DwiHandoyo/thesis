@@ -25,11 +25,22 @@
 \newcommand{\subsubsubsection}[1]{\paragraph{#1}\mbox{}\\}
 
 \titleformat{\subsubsubsection}
-{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
-\titleformat*{\section}{\normalfont\normalsize\bfseries}
-\titleformat*{\subsection}{\normalfont\normalsize\bfseries}
+{\normalfont\normalsize\bfseries}{\theparagraph\quad}{0pt}{}
+\titleformat{\section}
+{\normalfont\normalsize\bfseries}
+{\thesection\quad}{0pt}{}
+
+\titleformat{\subsection}
+{\normalfont\normalsize\bfseries}
+{\thesubsection\quad}{0pt}{}
+
+\titleformat{\subsubsection}
+{\normalfont\normalsize\bfseries}
+{\thesubsubsection\quad}{0pt}{}
+
 \titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{0pt}
 \titlespacing*{\subsection}{0pt}{3.25ex plus 1ex minus .2ex}{0pt}
+\titlespacing*{\subsubsection}{0pt}{3.25ex plus 1ex minus .2ex}{0pt}
 \titlespacing*{\subsubsubsection}{0pt}{3.25ex plus 1ex minus .2ex}{0pt}
 % {0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 
@@ -137,26 +148,25 @@
 \newlength{\chapnumwidth}
 \settowidth{\chapnumwidth}{Bab IV\quad}
 \newlength{\secnumwidth}
-\settowidth{\secnumwidth}{IV.5\quad}
-\newlength{\subsecindent}
-\setlength{\subsecindent}{\chapnumwidth}
-\addtolength{\subsecindent}{\secnumwidth}
+\settowidth{\secnumwidth}{IV.10\quad}
+\newlength{\subsecnumwidth}
+\settowidth{\subsecnumwidth}{IV.10.10\quad}
 \titlecontents{chapter}
   [0pt]
   {}
-  {\makebox[\chapnumwidth][l]{Bab \thecontentslabel\quad}} % For numbered chapters
-  {\uppercase} % For NUMBERLESS chapters (like DAFTAR ISI)
+  {\makebox[\chapnumwidth][l]{Bab \thecontentslabel\quad}}
+  {\uppercase}
   {\mdseries\titlerule*[0.35em]{.}\contentspage}
 \titlecontents{section}
-  [\chapnumwidth] % Indent by chapter number width
+  [1.5em]
   {}
-  {\makebox[\secnumwidth][l]{\thecontentslabel\quad}} % Use a box for the section number
+  {\makebox[\secnumwidth][l]{\thecontentslabel\quad}}
   {}
   {\mdseries\titlerule*[0.35em]{.}\contentspage}
 \titlecontents{subsection}
-  [\subsecindent] % Indent by the combined width of chapter + section numbers
+  [3em]
   {}
-  {\thecontentslabel\quad}
+  {\makebox[\subsecnumwidth][l]{\thecontentslabel\quad}}
   {}
   {\mdseries\titlerule*[0.35em]{.}\contentspage}
 \titlecontents{figure}
