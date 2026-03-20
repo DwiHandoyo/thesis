@@ -26,6 +26,22 @@ Kedua model data tersebut harus tersinkronisasi melalui event handler yang mengu
     \label{fig:arsitektur-cqrs}
 \end{figure}
 
+\subsection{Event Sourcing dan Message Broker}
+
+Pada arsitektur CQRS, sinkronisasi antara model tulis dan model baca umumnya dilakukan melalui mekanisme yang disebut \emph{event sourcing}.
+Dalam pendekatan ini, setiap perubahan data tidak langsung dituliskan ke database baca, melainkan dicatat terlebih dahulu sebagai sebuah event.
+Event tersebut merepresentasikan fakta bahwa suatu perubahan telah terjadi, misalnya ``pesanan dibuat'' atau ``stok dikurangi''.
+Kumpulan event ini disimpan secara berurutan dan menjadi sumber kebenaran (\emph{source of truth}) dari seluruh riwayat perubahan data dalam sistem (Kleppmann, 2017).
+
+Untuk mengirimkan event dari sisi tulis ke sisi baca, digunakan komponen perantara yang disebut \emph{message broker}.
+Message broker adalah middleware yang menerima pesan dari komponen pengirim (\emph{producer}), menyimpannya sementara dalam antrian, lalu mengirimkannya ke komponen penerima (\emph{consumer}) yang membutuhkan.
+Contoh message broker yang umum digunakan adalah Apache Kafka dan RabbitMQ.
+Dengan adanya message broker, komponen tulis tidak perlu mengetahui siapa yang akan membaca datanya, dan komponen baca tidak perlu terhubung langsung ke komponen tulis.
+Pemisahan ini menjaga \emph{loose coupling} antar komponen, namun juga berarti bahwa data pada sisi baca tidak selalu langsung mencerminkan perubahan terbaru di sisi tulis (Kleppmann, 2017).
+
+Dalam konteks penelitian ini, event sourcing dan message broker menjadi mekanisme utama yang menghubungkan write model dan read model pada arsitektur CQRS.
+Perilaku antrian pesan pada message broker, termasuk seberapa cepat pesan diproduksi dan dikonsumsi, menjadi salah satu variabel kunci yang memengaruhi kualitas sinkronisasi data.
+
 \section{Sinkronisasi Data dan Stream Processing pada Sistem Terdistribusi}
 
 Sinkronisasi data merupakan komponen kunci dalam sistem terdistribusi yang memisahkan komponen penghasil data dan komponen yang mengonsumsi data secara asinkron.
@@ -51,7 +67,7 @@ Hal ini menunjukkan adanya trade-off antara kecepatan propagasi data dan stabili
 
 Berdasarkan karakteristik tersebut, sinkronisasi data pada sistem terdistribusi, khususnya yang berbasis stream processing dan CQRS, dapat dipandang sebagai proses yang bersifat dinamis dan berubah terhadap waktu.
 Kondisi sistem pada satu waktu memengaruhi efektivitas keputusan sinkronisasi pada waktu berikutnya, sehingga mekanisme penyesuaian parameter sinkronisasi perlu mempertimbangkan respons sistem secara berkelanjutan.
-Pandangan ini menjadi dasar untuk memodelkan sinkronisasi data sebagai sistem dinamis, yang selanjutnya membuka ruang bagi penerapan pendekatan pengendalian pada bab-bab berikutnya.
+Karakteristik ini menjadi dasar untuk memodelkan sinkronisasi data sebagai sistem dinamis yang dapat dikendalikan.
 
 \section{Batching, Backlog, dan Dampaknya terhadap Kinerja Sistem}
 
@@ -75,16 +91,29 @@ Peningkatan backlog tidak hanya meningkatkan latensi sinkronisasi, tetapi juga b
 
 Penelitian terdahulu menunjukkan bahwa pengaturan batch secara statik sulit mempertahankan performa yang stabil pada kondisi beban yang berubah.
 Parameter batch yang optimal pada satu kondisi dapat menjadi tidak efektif pada kondisi lain, sehingga pengaturan batch dan pemantauan backlog perlu dipandang sebagai bagian dari sistem yang bersifat dinamis.
-Pandangan ini menjadi dasar untuk memodelkan proses sinkronisasi data sebagai sistem dinamis, yang membuka ruang bagi pendekatan pengendalian adaptif pada bab-bab selanjutnya (Wu dkk., 2020).
+Oleh karena itu, pengaturan batch dan backlog perlu ditangani sebagai masalah pengendalian sistem dinamis (Wu dkk., 2020).
 
 \section{Pengendalian Umpan Balik dalam Sistem Perangkat Lunak}
 
-Pengendalian umpan balik merupakan pendekatan yang digunakan untuk mengatur perilaku sistem agar tetap stabil dan optimal dengan menyesuaikan parameter-parameter kontrol berdasarkan pengamatan kondisi sistem dan deviasi dengan nilai yang diinginkan secara real-time (Ogata, 2010).
-Dalam konteks sistem sinkronisasi basis data, pengendalian umpan balik memungkinkan sistem untuk mengatur aspek-aspek seperti konsumsi sumber daya atau laju eksekusi proses mengikuti perubahan kondisi lingkungan seperti beban kerja maupun \emph{latency} dari infrastruktur.
+Dari pembahasan sebelumnya, terlihat bahwa parameter sinkronisasi seperti batch size dan poll interval tidak bisa diatur sekali lalu dibiarkan.
+Kondisi sistem berubah terus-menerus, dan parameter yang tepat pada satu waktu bisa menjadi tidak tepat beberapa saat kemudian.
+Artinya, dibutuhkan mekanisme yang dapat mengamati kondisi sistem secara berkala, lalu menyesuaikan parameter secara otomatis.
+Dalam disiplin ilmu teknik, pendekatan semacam ini dikenal sebagai pengendalian umpan balik (\emph{feedback control}).
 
-Salah satu alasan pendekatan ini relevan dalam sistem perangkat lunak modern adalah karena sistem perangkat lunak modern semakin bersifat kompleks, sehingga konfigurasi secara statik tidak dapat selalu menjadi yang optimal.
-Untuk mengatasi hal ini, digunakan sistem kontrol berbasis \emph{feedback loop} yang dapat bereaksi terhadap deviasi dari performa yang diinginkan.
-Pengendalian seperti ini telah diterapkan pada pengaturan throughput layanan cloud, alokasi dinamis memori, dan pengendalian autoscaling sistem.
+Pengendalian umpan balik bekerja dengan cara mengukur kondisi aktual sistem, membandingkannya dengan kondisi yang diinginkan, lalu mengambil tindakan koreksi untuk memperkecil selisihnya (Ogata, 2010).
+Prinsip yang sama berlaku baik untuk pengaturan suhu ruangan oleh AC, kecepatan motor oleh kontroler, maupun parameter sinkronisasi oleh sistem perangkat lunak.
+Dalam konteks sinkronisasi basis data, sinyal umpan balik berupa metrik seperti backlog, utilisasi CPU, atau latensi, dan tindakan koreksi berupa penyesuaian batch size atau poll interval.
+
+Pendekatan ini relevan karena sistem perangkat lunak modern semakin kompleks dan konfigurasi statik tidak selalu optimal.
+Pengendalian umpan balik telah diterapkan pada berbagai konteks perangkat lunak, termasuk pengaturan throughput layanan cloud, alokasi dinamis memori, dan pengendalian autoscaling sistem.
+
+Pendekatan paling sederhana untuk menerapkan umpan balik adalah menggunakan aturan tetap.
+Misalnya, jika backlog melebihi 1000 pesan, perbesar batch size; jika utilisasi CPU melebihi 80\%, perkecil batch size.
+Pendekatan semacam ini mudah diimplementasikan, tetapi memiliki keterbatasan mendasar.
+Aturan tetap hanya bereaksi terhadap satu kondisi pada satu waktu, tanpa mempertimbangkan bagaimana perubahan satu parameter memengaruhi variabel lain secara bersamaan.
+Memperbesar batch size untuk mengurangi backlog, misalnya, bisa justru meningkatkan utilisasi CPU dan memori secara signifikan.
+Selain itu, aturan tetap tidak memiliki definisi formal tentang apa yang dimaksud ``optimal'', sehingga tidak ada jaminan bahwa keputusan yang diambil benar-benar menyeimbangkan seluruh variabel yang terlibat.
+Keterbatasan inilah yang mendorong penggunaan pendekatan berbasis model matematis, di mana hubungan antar variabel dimodelkan secara eksplisit dan keputusan kontrol dihasilkan melalui optimisasi formal (Hellerstein dkk., 2004).
 
 \subsection{Teori Kontrol pada Sistem Perangkat Lunak}
 
@@ -93,7 +122,7 @@ Secara prinsip, teori kontrol bekerja dengan cara mengukur deviasi antara kondis
 
 Dalam sistem perangkat lunak, sinyal umpan balik dapat berupa metrik runtime seperti penggunaan CPU, backlog antrian data, \emph{response time}.
 Dengan menggunakan pengendali yang sesuai, sistem dapat mengubah parameter konfigurasinya, seperti ukuran batch, atau frekuensi polling, agar kinerja sistem tetap stabil meskipun kondisi eksternal berubah.
-Pendekatan seperti ini sangat relevan dalam arsitektur modern yang bersifat elastis dan skalabel, serta ketika sistem perlu menyeimbangkan antara dua tujuan yang saling bertentangan misalnya performa dan konsistensi data.
+Pendekatan ini relevan ketika sistem perlu menyeimbangkan tujuan yang saling bertentangan, misalnya antara performa dan konsistensi data.
 
 Model formal dari sistem yang dikendalikan biasanya dinyatakan dalam bentuk \emph{state-space representation}, di mana sistem digambarkan sebagai hubungan linier antara status saat ini, aksi kontrol, dan status selanjutnya:
 
@@ -110,7 +139,7 @@ Di sinilah pendekatan kontrol optimal seperti LQR menjadi sangat relevan.
 
 \subsection{Linear Quadratic Regulator}
 
-Linear Quadratic Regulator (LQR) adalah salah satu teknik pengendalian optimal yang terkenal dan banyak digunakan dalam dunia teknik kendali.
+Linear Quadratic Regulator (LQR) adalah teknik pengendalian optimal yang meminimalkan fungsi biaya kuadratik pada sistem linier.
 Keunggulan utama dari LQR adalah kemampuannya untuk secara matematis menyeimbangkan antara dua tujuan yang sering bertentangan yaitu meminimalkan kesalahan sistem dan meminimalkan usaha kontrol.
 
 Secara formal, LQR bertujuan untuk meminimalkan fungsi biaya kuadratik berikut ini:
@@ -126,6 +155,12 @@ Di mana:
 \item \(Q:\) bobot penalti terhadap kesalahan status sistem, berupa matriks definit positif,
 \item \(R:\) bobot penalti terhadap usaha pengendalian, berupa matriks definit positif.
 \end{itemize}
+
+Sebagai gambaran, misalkan dalam sistem sinkronisasi CQRS terdapat dua variabel state yang ingin dijaga, yaitu backlog dan utilisasi CPU.
+Jika matriks Q diberi bobot besar pada komponen backlog dan bobot kecil pada utilisasi CPU, maka sistem akan lebih agresif dalam menekan backlog, meskipun hal tersebut menyebabkan perubahan batch size yang besar dan fluktuasi utilisasi CPU.
+Sebaliknya, jika matriks R diberi bobot besar, sistem akan lebih konservatif dalam mengubah parameter kontrol, sehingga batch size berubah secara perlahan meskipun backlog membutuhkan waktu lebih lama untuk turun.
+Dengan mengatur Q dan R, perancang sistem secara eksplisit menentukan mana yang lebih diprioritaskan antara kecepatan respons dan kestabilan parameter.
+Mekanisme prioritisasi semacam ini tidak dimiliki oleh pendekatan berbasis aturan tetap maupun kontrol konvensional yang hanya mengamati satu variabel.
 
 \begin{figure}[H]
     \centering
@@ -152,4 +187,4 @@ Hasilnya berupa estimasi terhadap matriks A dan B, yang diperlukan untuk meranca
 
 Walaupun implementasinya lebih kompleks dibandingkan pendekatan seperti PID, LQR menawarkan keunggulan dalam hal kestabilan, keoptimalan, dan fleksibilitas.
 Penentuan parameter kontrol pada LQR juga lebih sesuai untuk diterapkan pada kondisi berbasis \emph{trade-off} karena didasarkan pada matriks biaya yang bisa diatur untuk menentukan variabel mana yang akan diunggulkan dibanding yang lain.
-Oleh karena itu, dalam sistem yang memerlukan kontrol presisi tinggi terhadap dinamika kompleks seperti dalam pengelolaan sinkronisasi data yang adaptif dan berbasis resource utilization LQR merupakan pilihan yang sangat menjanjikan.
+Dengan karakteristik tersebut, LQR sesuai untuk diterapkan pada pengendalian sinkronisasi data yang melibatkan beberapa variabel sekaligus.

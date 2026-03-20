@@ -181,7 +181,7 @@ Dengan demikian, $u^*(t)$ merepresentasikan aksi kontrol yang paling seimbang un
 \section{Desain Eksperimen dan Skenario Pengujian}
 
 Desain eksperimen pada penelitian ini bertujuan untuk mengevaluasi efektivitas pengendalian sinkronisasi data berbasis LQR dalam berbagai kondisi operasional sistem.
-Eksperimen dirancang secara terkontrol agar hasil yang diperoleh mencerminkan pengaruh langsung dari mekanisme pengendalian terhadap dinamika sinkronisasi, bukan akibat perubahan lingkungan atau konfigurasi sistem yang tidak relevan.
+Eksperimen dirancang agar hasil yang diperoleh mencerminkan pengaruh mekanisme pengendalian, bukan faktor eksternal lainnya.
 
 Eksperimen dilakukan dengan menjalankan sistem CQRS pada lingkungan uji yang konsisten, dengan konfigurasi perangkat keras, skema data, dan logika materialisasi read model yang dijaga tetap.
 Variasi yang diperkenalkan dalam eksperimen dibatasi pada skenario beban dan parameter pengendalian yang menjadi fokus penelitian.
@@ -232,7 +232,7 @@ Pola ini bertujuan untuk mengamati sensitivitas sistem terhadap gangguan sementa
 Selain itu, digunakan pola \emph{step periodik} untuk merepresentasikan perubahan beban yang berulang antara dua tingkat tertentu dalam interval waktu tetap.
 Pola ini digunakan untuk mengevaluasi stabilitas jangka menengah sistem pengendalian serta potensi munculnya osilasi akibat perubahan beban yang berulang.
 Pengamatan pada skenario ini difokuskan pada konsistensi respons sistem dan kemampuan pengendalian dalam mempertahankan performa yang stabil pada siklus beban yang berulang.
-Dengan menggunakan kombinasi keempat pola beban tersebut, eksperimen diharapkan mampu memberikan gambaran yang komprehensif mengenai respons dinamis dan stabilitas pengendalian sinkronisasi pada berbagai kondisi operasional yang relevan.
+Dengan menggunakan kombinasi keempat pola beban tersebut, eksperimen dapat menguji respons dan stabilitas pengendalian pada berbagai kondisi operasional.
 
 \begin{figure}[H]
     \centering

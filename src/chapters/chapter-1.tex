@@ -10,10 +10,11 @@ Pola ini sangat relevan di lingkungan terdistribusi, di mana kebutuhan baca dan 
 Salah satu keunggulan nyata dari CQRS adalah efisiensi penggunaan sumber daya dalam operasi baca.
 Karena model baca dapat dirancang agar hanya mengambil field yang dibutuhkan saja, sistem tidak perlu memuat keseluruhan entitas data.
 Cara ini mengurangi overhead memori dan I/O, serta menghindari biaya tambahan yang muncul dari pemrosesan objek-objek besar ketika hanya sebagian kecil datanya yang dipakai (ZhangLong, 2017).
-Selain itu, dengan memisahkan model baca dan model tulis, beban tulis dapat diisolasi agar tidak mengganggu performa baca, misalnya mengurangi konflik lock database pada sistem tradisional di mana optimasi ini memerlukan transformasi data sehingga memerlukan sumber daya yang lebih besar daripada arsitektur terdistribusi lainnya yang hanya berfokus pada sinkronisasi data.
+Selain itu, dengan memisahkan model baca dan model tulis, beban tulis dapat diisolasi agar tidak mengganggu performa baca, misalnya mengurangi konflik lock database yang umum terjadi pada sistem tradisional.
+Namun, pemisahan ini juga berarti data perlu ditransformasi dan disinkronkan dari model tulis ke model baca, yang menambah kebutuhan sumber daya tersendiri.
 
 Selain itu, pemisahan model ini membawa tantangan tersendiri, terutama dalam menjaga sinkronisasi antara basis data tulis dan baca.
-CQRS sering menggunakan mekanisme asinkron seperti event sourcing atau message broker untuk meneruskan event perubahan dari sisi tulis ke sisi baca (Morris dkk., 2023).
+CQRS sering menggunakan mekanisme asinkron untuk meneruskan perubahan dari sisi tulis ke sisi baca, misalnya melalui event sourcing, yaitu pola di mana setiap perubahan data dicatat sebagai event yang kemudian dikirim melalui message broker ke komponen yang membutuhkan (Morris dkk., 2023).
 Pada mekanisme ini, muncul potensi eventual consistency, situasi di mana data pada model baca belum mencerminkan perubahan terbaru pada model tulis (Kleppmann, 2017).
 Meski inkonsistensi ini bersifat sementara, dalam banyak aplikasi, terutama yang bersifat real-time atau kritikal, efeknya terhadap akurasi data tetap dapat signifikan (Vogels, 2009; Bailis dkk., 2012).
 
@@ -31,16 +32,21 @@ Studi pada \emph{Micro-batch and data frequency for stream processing on multi-c
 Hasil ini memperkuat pandangan bahwa pengaturan ukuran batch yang adaptif merupakan kunci dalam menjaga keseimbangan antara performa dan efisiensi sumber daya.
 
 Beberapa penelitian terdahulu telah mencoba menangani trade-off ini melalui pendekatan dynamic batching.
-Wu, dkk. (2020) mengusulkan reactive batching strategy pada Apache Kafka, yang menyesuaikan ukuran batch berdasarkan metrik sistem seperti latensi, throughput.
-Pendekatan ini efektif mengurangi lonjakan latensi, namun berfokus pada optimisasi ukuran batch dengan pertimbangan latency dan throughput.
-Pada penerapan event sourcing untuk CQRS, resource utilization juga perlu dipertimbangkan.
+Wu, dkk. (2020) mengusulkan reactive batching strategy pada Apache Kafka, yang menyesuaikan ukuran batch berdasarkan metrik sistem seperti latensi dan throughput.
+Pendekatan ini efektif mengurangi lonjakan latensi, namun berfokus pada optimisasi ukuran batch tanpa memperhitungkan utilisasi sumber daya.
 Penelitian lain dilakukan oleh Das dkk. (2018) dengan memperkenalkan Structured Streaming pada Apache Spark, yang menggunakan micro-batching adaptif untuk menyeimbangkan kebutuhan latensi rendah dan efisiensi sumber daya.
-Sementara itu, Wu, dkk. (2019) pada penelitian lain mengembangkan model teori antrian untuk memprediksi dampak konfigurasi Kafka, termasuk batch size, terhadap throughput dan latensi, meski hasilnya sebatas prediksi tanpa mekanisme kendali adaptif.
+Sementara itu, Wu, dkk. (2019) mengembangkan model teori antrian untuk memprediksi dampak konfigurasi Kafka terhadap throughput dan latensi, meski hasilnya sebatas prediksi tanpa mekanisme kendali adaptif.
 
-Berdasarkan penelitian-penelitian tersebut, dapat disimpulkan bahwa meskipun dynamic batching terbukti meningkatkan performa sistem, sebagian besar pendekatannya masih berbasis heuristik, prediksi sederhana, atau kontrol klasik.
-Penelitian ini akan menggunakan Linear Quadratic Regulator (LQR), sebuah metode kontrol optimal yang memungkinkan perumusan masalah sinkronisasi dalam kerangka state-space.
-Dengan LQR, trade-off antara konsistensi data dan efisiensi sumber daya dapat dimodelkan secara matematis dalam bentuk fungsi biaya kuadratik.
-Pendekatan ini diharapkan mampu memberikan solusi yang lebih sistematis dan optimal untuk menjaga konsistensi data sekaligus mengoptimalkan penggunaan sumber daya dalam arsitektur CQRS.
+Meskipun pendekatan-pendekatan di atas terbukti meningkatkan performa, sebagian besar masih berbasis heuristik atau aturan tetap.
+Pendekatan semacam itu menyesuaikan parameter berdasarkan ambang batas tertentu, tanpa memperhitungkan kondisi keseluruhan sistem secara bersamaan.
+
+Permasalahan ini pada dasarnya serupa dengan masalah pengendalian di dunia fisik, di mana sistem perlu mengamati kondisinya saat ini, lalu menyesuaikan parameter secara otomatis agar tetap pada kondisi yang diinginkan.
+Prinsip ini dikenal sebagai pengendalian umpan balik (\emph{feedback control}), dan telah lama diterapkan pada sistem teknik seperti pengaturan suhu, kecepatan motor, atau stabilitas pesawat.
+Dalam konteks perangkat lunak, pendekatan serupa dapat digunakan untuk mengatur parameter sinkronisasi berdasarkan metrik yang diamati secara real-time.
+
+Salah satu metode pengendalian umpan balik yang mampu menangani sistem dengan banyak variabel sekaligus adalah Linear Quadratic Regulator (LQR).
+LQR memungkinkan perancang sistem untuk menentukan secara eksplisit seberapa penting setiap variabel melalui suatu fungsi biaya, sehingga trade-off antara konsistensi data dan efisiensi sumber daya dapat dirumuskan secara matematis.
+Penelitian ini menggunakan pendekatan LQR untuk merancang mekanisme sinkronisasi yang adaptif pada arsitektur CQRS.
 
 \section{Masalah Penelitian}
 
@@ -48,21 +54,20 @@ Sebagaimana telah diuraikan pada latar belakang, sinkronisasi data pada arsitekt
 Pengaturan parameter secara statik terbukti tidak memadai karena tidak mampu merespons perubahan beban yang dinamis.
 Sementara itu, pendekatan dynamic batching berbasis heuristik yang telah diusulkan pada penelitian sebelumnya (Wu dkk., 2020; Das dkk., 2018) mampu meningkatkan performa, namun umumnya berfokus pada optimisasi satu atau dua metrik tanpa kerangka formal untuk mendefinisikan keseimbangan antar seluruh variabel yang terlibat.
 
-Pendekatan kontrol konvensional yang umum digunakan dalam sistem komputasi umumnya bekerja berdasarkan satu sinyal error, yaitu selisih antara nilai target dan nilai terukur dari satu variabel tertentu (Hellerstein dkk., 2004).
-Pendekatan semacam ini menghadapi beberapa keterbatasan mendasar ketika diterapkan pada permasalahan sinkronisasi CQRS.
-Pertama, kontrol konvensional mengoptimalkan satu variabel pada satu waktu, sehingga tidak memiliki mekanisme formal untuk mendefinisikan keseimbangan antar variabel yang saling bersaing.
-Kedua, pendekatan tersebut tidak memiliki konsep fungsi biaya (\emph{cost function}) yang memungkinkan perancang sistem untuk menyatakan secara eksplisit prioritas relatif antar variabel, misalnya apakah pengurangan backlog lebih penting daripada penghematan utilisasi CPU.
-Ketiga, pada sistem dengan banyak masukan dan banyak keluaran (\emph{Multi-Input Multi-Output}/MIMO) seperti CQRS, penalaan beberapa loop kontrol independen yang saling berinteraksi menjadi sangat sulit dan rentan terhadap ketidakstabilan (Ogata, 2010).
+Pendekatan kontrol konvensional yang umum digunakan dalam sistem komputasi biasanya hanya mengamati satu metrik, misalnya backlog saja, lalu menyesuaikan satu parameter sebagai respons (Hellerstein dkk., 2004).
+Pendekatan semacam ini memiliki beberapa keterbatasan ketika diterapkan pada sinkronisasi CQRS.
+Pertama, karena hanya fokus pada satu variabel, tidak ada cara formal untuk mendefinisikan keseimbangan antar variabel yang saling bersaing.
+Kedua, tidak ada mekanisme untuk menyatakan prioritas, misalnya apakah mengurangi backlog lebih penting daripada menghemat CPU.
+Ketiga, ketika sistem memiliki banyak variabel yang saling memengaruhi, seperti backlog, latensi, CPU, dan memori, mengatur masing-masing secara terpisah sering kali justru menimbulkan ketidakstabilan (Ogata, 2010).
 
-Berdasarkan keterbatasan tersebut, terdapat kebutuhan akan pendekatan kontrol yang mampu mempertimbangkan seluruh variabel keadaan sistem secara simultan, memiliki mekanisme formal untuk mendefinisikan prioritas dan keseimbangan antar variabel melalui suatu fungsi biaya, serta menghasilkan sinyal kontrol yang optimal secara matematis.
-Pendekatan semacam ini diharapkan dapat mengatasi keterbatasan metode konvensional dalam menangani trade-off multi-variabel pada sinkronisasi data CQRS.
+Oleh karena itu, dibutuhkan pendekatan yang mampu melihat seluruh kondisi sistem secara bersamaan, menentukan prioritas antar variabel secara eksplisit, dan menghasilkan keputusan parameter yang optimal.
 
 Berdasarkan uraian di atas, rumusan masalah penelitian ini adalah sebagai berikut:
 
 \begin{enumerate}
 \item Bagaimana mendefinisikan keseimbangan antara konsistensi data dan efisiensi sumber daya dalam sinkronisasi CQRS secara formal dan terukur?
-\item Bagaimana merancang mekanisme pengendalian umpan balik yang mampu mengoptimalkan trade-off multi-variabel (backlog, latensi, utilisasi) secara simultan?
-\item Sejauh mana efektivitas pendekatan tersebut dalam menjaga performa dan konsistensi sistem dibandingkan pengaturan parameter statik?
+\item Bagaimana merancang mekanisme pengendalian yang mampu mengoptimalkan trade-off multi-variabel (backlog, latensi, utilisasi) secara simultan?
+\item Sejauh mana efektivitas pendekatan tersebut dibandingkan pengaturan parameter statik?
 \end{enumerate}
 
 \section{Tujuan}
@@ -70,7 +75,7 @@ Berdasarkan uraian di atas, rumusan masalah penelitian ini adalah sebagai beriku
 Penelitian ini bertujuan untuk:
 
 \begin{enumerate}
-\item Membuat sistem yang mencapai keseimbangan antara konsistensi yang baik dengan waktu dan pemakaian sumber daya yang optimal.
+\item Membuat sistem CQRS yang mencapai keseimbangan antara latency dan pemakaian sumber daya yang optimal berdasarkan cost function.
 \item Merancang sistem pengendalian umpan balik yang adaptif berbasis kontrol umpan balik LQR yang mampu mengelola parameter sinkronisasi secara dinamis.
 \end{enumerate}
 
@@ -89,7 +94,7 @@ Berdasarkan premis-premis di atas, hipotesis penelitian ini adalah bahwa penggun
 \section{Batasan Masalah}
 
 Penelitian ini berfokus pada aspek fundamental dari mekanisme sinkronisasi data pada arsitektur berbasis event sourcing.
-Untuk menjaga fokus penelitian dan memastikan analisis yang mendalam serta terukur, ruang lingkup penelitian dibatasi secara eksplisit sebagai pertimbangan metodologis, bukan karena keterbatasan implementasi.
+Untuk menjaga fokus penelitian dan memastikan analisis yang terukur, ruang lingkup penelitian dibatasi karena pertimbangan metodologis, bukan karena keterbatasan implementasi.
 
 Dalam penelitian ini digunakan satu server database tulis dan satu server database baca, serta satu consumer dan satu topic pada message broker.
 Pembatasan ini dilakukan untuk menghindari kompleksitas tambahan seperti heterogenitas replika, dinamika diskrit, dan perilaku switching yang muncul pada sistem dengan multiple read replica dan mekanisme quorum, sehingga dinamika sinkronisasi dapat direpresentasikan secara konsisten dalam kerangka pemodelan linear yang sesuai dengan pendekatan kontrol LQR.
@@ -117,106 +122,4 @@ Bab ini membahas teori dasar terkait arsitektur pemisahan baca-tulis, kontrol um
 \item Bab III Analisis dan Solusi
 
 Bab ini memaparkan pendekatan eksperimen, skenario pengujian, dan variabel yang digunakan.
-\end{enumerate}
-
-\subsection{Latar Belakang}
-
-Sistem terdistribusi modern menghadapi tantangan peningkatan volume data dan kebutuhan respon yang cepat seiring pertumbuhan pengguna dan layanan (Kleppmann, 2017).
-Untuk meningkatkan performa dan skalabilitas pada operasi baca dan tulis secara bersamaan, arsitektur Command Query Responsibility Segregation (CQRS) muncul sebagai salah satu pola yang banyak digunakan.
-CQRS memisahkan logika tulis (command) dan baca (query), memungkinkan tiap sisi dioptimalkan secara berbeda sesuai beban yang ditanggung (Fowler, 2011).
-Pola ini sangat relevan di lingkungan terdistribusi, di mana kebutuhan baca dan tulis sering kali berbeda signifikan dalam frekuensi dan kompleksitas (Munonye \& Martinek, 2023).
-
-Salah satu keunggulan nyata dari CQRS adalah efisiensi penggunaan sumber daya dalam operasi baca.
-Karena model baca dapat dirancang agar hanya mengambil field yang dibutuhkan saja, sistem tidak perlu memuat keseluruhan entitas data.
-Cara ini mengurangi overhead memori dan I/O, serta menghindari biaya tambahan yang muncul dari pemrosesan objek-objek besar ketika hanya sebagian kecil datanya yang dipakai (ZhangLong, 2017).
-Selain itu, dengan memisahkan model baca dan model tulis, beban tulis dapat diisolasi agar tidak mengganggu performa baca, misalnya mengurangi konflik lock database pada sistem tradisional di mana optimasi ini memerlukan transformasi data sehingga memerlukan sumber daya yang lebih besar daripada arsitektur terdistribusi lainnya yang hanya berfokus pada sinkronisasi data.
-
-Selain itu, pemisahan model ini membawa tantangan tersendiri, terutama dalam menjaga sinkronisasi antara basis data tulis dan baca.
-CQRS sering menggunakan mekanisme asinkron seperti event sourcing atau message broker untuk meneruskan event perubahan dari sisi tulis ke sisi baca (Morris dkk., 2023).
-Pada mekanisme ini, muncul potensi eventual consistency, situasi di mana data pada model baca belum mencerminkan perubahan terbaru pada model tulis (Kleppmann, 2017).
-Meski inkonsistensi ini bersifat sementara, dalam banyak aplikasi, terutama yang bersifat real-time atau kritikal, efeknya terhadap akurasi data tetap dapat signifikan (Vogels, 2009; Bailis dkk., 2012).
-
-Dalam praktik sinkronisasi berbasis event atau batch, pengaturan ukuran batch (batch size) menjadi aspek krusial.
-Di bawah beban tinggi, batch yang besar mampu mengurangi overhead per pesan seperti pengiriman jaringan, kompresi, atau penanganan log, sehingga throughput meningkat.
-Namun, batch besar juga menyebabkan latensi end-to-end lebih tinggi karena waktu tunggu pengisian batch dan frekuensi pengiriman yang lebih rendah.
-Selain itu, ketika batch besar mencapai sisi basis data baca atau tulis untuk sinkronisasi, bisa terjadi lonjakan penggunaan CPU, memori, dan I/O, yang pada gilirannya dapat menyebabkan penurunan performa throughput secara keseluruhan atau bahkan bottleneck.
-Sebaliknya, batch yang sangat kecil memang menurunkan latensi, tetapi justru menghasilkan overhead yang lebih besar karena frekuensi commit lebih sering, konsumsi CPU meningkat, dan beban jaringan bertambah (Wu dkk., 2019; Rahman, 2010).
-Kondisi ini menunjukkan bahwa permasalahan sinkronisasi data pada CQRS tidak semata-mata merupakan persoalan optimasi parameter statik, melainkan persoalan pengendalian sistem yang dinamis.
-
-Hal ini sejalan dengan temuan Leonarczyk (2025) yang meneliti self-adaptive micro-batching pada sistem stream processing berbasis GPU.
-Penelitian tersebut menunjukkan bahwa ukuran batch memiliki pengaruh langsung terhadap konsumsi memori, efisiensi transfer data, dan latensi pemrosesan.
-Jika batch terlalu besar, maka sistem mengalami lonjakan penggunaan resource dan latensi yang signifikan, sedangkan batch terlalu kecil meningkatkan overhead penjadwalan.
-Studi pada \emph{Micro-batch and data frequency for stream processing on multi-cores} oleh Adriano, dkk. (2022) juga mengamati bahwa pada beban kerja dengan frekuensi data variatif, ukuran batch yang fleksibel membantu menjaga efisiensi CPU ketika beban puncak.
-Hasil ini memperkuat pandangan bahwa pengaturan ukuran batch yang adaptif merupakan kunci dalam menjaga keseimbangan antara performa dan efisiensi sumber daya.
-
-Beberapa penelitian terdahulu telah mencoba menangani trade-off ini melalui pendekatan dynamic batching.
-Wu, dkk. (2020) mengusulkan reactive batching strategy pada Apache Kafka, yang menyesuaikan ukuran batch berdasarkan metrik sistem seperti latensi, throughput.
-Pendekatan ini efektif mengurangi lonjakan latensi, namun berfokus pada optimisasi ukuran batch dengan pertimbangan latency dan throughput.
-Pada penerapan event sourcing untuk CQRS, resource utilization juga perlu dipertimbangkan.
-Penelitian lain dilakukan oleh Das dkk. (2018) dengan memperkenalkan Structured Streaming pada Apache Spark, yang menggunakan micro-batching adaptif untuk menyeimbangkan kebutuhan latensi rendah dan efisiensi sumber daya.
-Sementara itu, Wu, dkk. (2019) pada penelitian lain mengembangkan model teori antrian untuk memprediksi dampak konfigurasi Kafka, termasuk batch size, terhadap throughput dan latensi, meski hasilnya sebatas prediksi tanpa mekanisme kendali adaptif.
-
-Berdasarkan penelitian-penelitian tersebut, dapat disimpulkan bahwa meskipun dynamic batching terbukti meningkatkan performa sistem, sebagian besar pendekatannya masih berbasis heuristik, prediksi sederhana, atau kontrol klasik.
-Penelitian ini akan menggunakan Linear Quadratic Regulator (LQR), sebuah metode kontrol optimal yang memungkinkan perumusan masalah sinkronisasi dalam kerangka state-space.
-Dengan LQR, trade-off antara konsistensi data dan efisiensi sumber daya dapat dimodelkan secara matematis dalam bentuk fungsi biaya kuadratik.
-Pendekatan ini diharapkan mampu memberikan solusi yang lebih sistematis dan optimal untuk menjaga konsistensi data sekaligus mengoptimalkan penggunaan sumber daya dalam arsitektur CQRS.
-
-\subsection{Masalah Penelitian}
-
-Sebagaimana telah diuraikan pada latar belakang, sinkronisasi data pada arsitektur CQRS melibatkan trade-off yang kompleks antara beberapa variabel yang saling bersaing, yaitu backlog pesan, latensi sinkronisasi, utilisasi CPU, dan utilisasi memori.
-Pengaturan parameter secara statik terbukti tidak memadai karena tidak mampu merespons perubahan beban yang dinamis.
-Sementara itu, pendekatan dynamic batching berbasis heuristik yang telah diusulkan pada penelitian sebelumnya (Wu dkk., 2020; Das dkk., 2018) mampu meningkatkan performa, namun umumnya berfokus pada optimisasi satu atau dua metrik tanpa kerangka formal untuk mendefinisikan keseimbangan antar seluruh variabel yang terlibat.
-
-Pendekatan kontrol konvensional yang umum digunakan dalam sistem komputasi umumnya bekerja berdasarkan satu sinyal error, yaitu selisih antara nilai target dan nilai terukur dari satu variabel tertentu (Hellerstein dkk., 2004).
-Pendekatan semacam ini menghadapi beberapa keterbatasan mendasar ketika diterapkan pada permasalahan sinkronisasi CQRS.
-Pertama, kontrol konvensional mengoptimalkan satu variabel pada satu waktu, sehingga tidak memiliki mekanisme formal untuk mendefinisikan keseimbangan antar variabel yang saling bersaing.
-Kedua, pendekatan tersebut tidak memiliki konsep fungsi biaya (\emph{cost function}) yang memungkinkan perancang sistem untuk menyatakan secara eksplisit prioritas relatif antar variabel, misalnya apakah pengurangan backlog lebih penting daripada penghematan utilisasi CPU.
-Ketiga, pada sistem dengan banyak masukan dan banyak keluaran (\emph{Multi-Input Multi-Output}/MIMO) seperti CQRS, penalaan beberapa loop kontrol independen yang saling berinteraksi menjadi sangat sulit dan rentan terhadap ketidakstabilan (Ogata, 2010).
-
-Berdasarkan keterbatasan tersebut, terdapat kebutuhan akan pendekatan kontrol yang mampu mempertimbangkan seluruh variabel keadaan sistem secara simultan, memiliki mekanisme formal untuk mendefinisikan prioritas dan keseimbangan antar variabel melalui suatu fungsi biaya, serta menghasilkan sinyal kontrol yang optimal secara matematis.
-Pendekatan semacam ini diharapkan dapat mengatasi keterbatasan metode konvensional dalam menangani trade-off multi-variabel pada sinkronisasi data CQRS.
-
-Berdasarkan uraian di atas, rumusan masalah penelitian ini adalah sebagai berikut:
-
-\begin{enumerate}
-\item Bagaimana mendefinisikan keseimbangan antara konsistensi data dan efisiensi sumber daya dalam sinkronisasi CQRS secara formal dan terukur?
-\item Bagaimana merancang mekanisme pengendalian umpan balik yang mampu mengoptimalkan trade-off multi-variabel (backlog, latensi, utilisasi) secara simultan?
-\item Sejauh mana efektivitas pendekatan tersebut dalam menjaga performa dan konsistensi sistem dibandingkan pengaturan parameter statik?
-\end{enumerate}
-
-\subsection{Tujuan}
-
-Penelitian ini bertujuan untuk:
-
-\begin{enumerate}
-\item Membuat sistem yang mencapai keseimbangan antara konsistensi yang baik dengan waktu dan pemakaian sumber daya yang optimal.
-\item Merancang sistem pengendalian umpan balik yang adaptif berbasis kontrol umpan balik LQR yang mampu mengelola parameter sinkronisasi secara dinamis.
-\end{enumerate}
-
-\subsection{Batasan Masalah}
-
-Penelitian ini berfokus pada aspek fundamental dari mekanisme sinkronisasi data pada arsitektur berbasis event sourcing.
-Untuk menjaga fokus penelitian dan memastikan analisis yang mendalam serta terukur, ruang lingkup penelitian dibatasi secara eksplisit sebagai pertimbangan metodologis, bukan karena keterbatasan implementasi.
-
-Dalam penelitian ini digunakan satu server database tulis dan satu server database baca, serta satu consumer dan satu topic pada message broker.
-Pembatasan ini dilakukan untuk menghindari kompleksitas tambahan seperti heterogenitas replika, dinamika diskrit, dan perilaku switching yang muncul pada sistem dengan multiple read replica dan mekanisme quorum, sehingga dinamika sinkronisasi dapat direpresentasikan secara konsisten dalam kerangka pemodelan linear yang sesuai dengan pendekatan kontrol LQR.
-
-Adapun batasan-batasan yang digunakan dalam penelitian ini adalah sebagai berikut:
-
-\begin{enumerate}
-\item Terdapat satu server database baca dan satu server database tulis.
-\item Terdapat satu \emph{consumer} dan satu \emph{topic} pada \emph{message broker.}
-\end{enumerate}
-
-\subsection{Sistematika Penulisan}
-
-Pembahasan proposal penelitian ini akan terbagi dalam tiga bab, yaitu sebagai berikut:
-
-\begin{enumerate}
-\item Bab I Pendahuluan \\
-  Bab ini berisi latar belakang, rumusan masalah, tujuan, batasan, hipotesis, metodologi, dan sistematika penulisan.
-\item Bab II Tinjauan Pustaka \\
-  Bab ini membahas teori dasar terkait arsitektur pemisahan baca-tulis, kontrol umpan balik, dan metrik evaluasi sistem.
-\item Bab III Analisis dan Solusi \\
-  Bab ini memaparkan pendekatan eksperimen, skenario pengujian, dan variabel yang digunakan.
 \end{enumerate}
