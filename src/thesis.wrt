@@ -41,7 +41,7 @@
 \@writefile{lot}{\addvspace {10\p@ }}
 \@writefile{toc}{\contentsline {section}{\numberline {II.1}Arsitektur Command Query Responsibility Segregation (CQRS)}{9}{section.2.1}\protected@file@percent }
 \@writefile{atoc}{\contentsline {section}{\numberline {II.1}Arsitektur Command Query Responsibility Segregation (CQRS)}{9}{section.2.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {II.1}{\ignorespaces Arsitektur CQRS (Munonye, 2020)}}{10}{figure.caption.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {II.1}{\ignorespaces Arsitektur CQRS}}{10}{figure.caption.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {II.1.1}Event Sourcing dan Message Broker}{10}{subsection.2.1.1}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {II.1.1}Event Sourcing dan Message Broker}{10}{subsection.2.1.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {II.2}Sinkronisasi Data dan Stream Processing pada Sistem Terdistribusi}{11}{section.2.2}\protected@file@percent }
@@ -51,83 +51,74 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {II.2}{\ignorespaces Micro-batch Processing}}{13}{figure.caption.6}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {II.4}Pengendalian Umpan Balik dalam Sistem Perangkat Lunak}{14}{section.2.4}\protected@file@percent }
 \@writefile{atoc}{\contentsline {section}{\numberline {II.4}Pengendalian Umpan Balik dalam Sistem Perangkat Lunak}{14}{section.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.1}Teori Kontrol pada Sistem Perangkat Lunak}{15}{subsection.2.4.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.1}Teori Kontrol pada Sistem Perangkat Lunak}{15}{subsection.2.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.2}Linear Quadratic Regulator}{17}{subsection.2.4.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.2}Linear Quadratic Regulator}{17}{subsection.2.4.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {II.3}{\ignorespaces Kontrol LQR}}{18}{figure.caption.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {III}Analisis dan Solusi}{21}{chapter.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {chapter}{\numberline {III}Analisis dan Solusi}{21}{chapter.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.1}Kontrol PID (Proportional-Integral-Derivative)}{15}{subsection.2.4.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.1}Kontrol PID (Proportional-Integral-Derivative)}{15}{subsection.2.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.2}Teori Kontrol pada Sistem Perangkat Lunak}{16}{subsection.2.4.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.2}Teori Kontrol pada Sistem Perangkat Lunak}{16}{subsection.2.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.3}Linear Quadratic Regulator}{18}{subsection.2.4.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.3}Linear Quadratic Regulator}{18}{subsection.2.4.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {II.3}{\ignorespaces Kontrol LQR}}{19}{figure.caption.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.4}Pendekatan Berbasis Jaringan Saraf Tiruan}{20}{subsection.2.4.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.4}Pendekatan Berbasis Jaringan Saraf Tiruan}{20}{subsection.2.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {III}Analisis dan Solusi}{23}{chapter.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {chapter}{\numberline {III}Analisis dan Solusi}{23}{chapter.3}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {III.1}Analisis Masalah}{21}{section.3.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {III.1}Analisis Masalah}{21}{section.3.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {III.1}{\ignorespaces Pengaruh ukuran batch terhadap rata-rata \emph {latency} (Wu, 2020)}}{23}{figure.caption.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {III.2}Analisis Solusi}{24}{section.3.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {III.2}Analisis Solusi}{24}{section.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{25}{subsection.3.2.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{25}{subsection.3.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.2}Perancangan Fungsi Biaya dan Definisi Keseimbangan}{26}{subsection.3.2.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.2}Perancangan Fungsi Biaya dan Definisi Keseimbangan}{26}{subsection.3.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.3}Kontrol Optimal Linear Quadratic Regulator (LQR)}{27}{subsection.3.2.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.3}Kontrol Optimal Linear Quadratic Regulator (LQR)}{27}{subsection.3.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {III.3}Rancangan Solusi}{28}{section.3.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {III.3}Rancangan Solusi}{28}{section.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.3.1}Eksperimen Open-Loop dan Identifikasi Sistem}{28}{subsection.3.3.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.3.1}Eksperimen Open-Loop dan Identifikasi Sistem}{28}{subsection.3.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.3.2}Definisi Aksi Kontrol Optimal}{29}{subsection.3.3.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.3.2}Definisi Aksi Kontrol Optimal}{29}{subsection.3.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {III.4}Desain Eksperimen dan Skenario Pengujian}{30}{section.3.4}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {III.4}Desain Eksperimen dan Skenario Pengujian}{30}{section.3.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.4.1}Lingkungan Uji}{30}{subsection.3.4.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.4.1}Lingkungan Uji}{30}{subsection.3.4.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {III.2}{\ignorespaces Arsitektur Desain yang akan diuji}}{31}{figure.caption.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.4.2}Perancangan Skenario Beban}{32}{subsection.3.4.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.4.2}Perancangan Skenario Beban}{32}{subsection.3.4.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {III.3}{\ignorespaces Simulasi beban dengan beberapa skenario fungsi}}{34}{figure.caption.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {III.5}Metrik Evaluasi Kerja}{34}{section.3.5}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {III.5}Metrik Evaluasi Kerja}{34}{section.3.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.1}Metrik Inti Kinerja Sinkronisasi}{35}{subsection.3.5.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.1}Metrik Inti Kinerja Sinkronisasi}{35}{subsection.3.5.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {III.1}{\ignorespaces Metrik kinerja sinkronisasi}}{36}{table.caption.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.2}Metrik Dinamika Kontrol}{37}{subsection.3.5.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.2}Metrik Dinamika Kontrol}{37}{subsection.3.5.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {III.2}{\ignorespaces Metrik dinamika kontrol}}{38}{table.caption.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.3}Metrik Efisiensi Pemrosesan}{38}{subsection.3.5.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.3}Metrik Efisiensi Pemrosesan}{38}{subsection.3.5.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {III.3}{\ignorespaces Metrik efisiensi pemrosesan}}{39}{table.caption.13}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.4}Metrik Biaya Kontrol}{39}{subsection.3.5.4}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.4}Metrik Biaya Kontrol}{39}{subsection.3.5.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {III.4}{\ignorespaces Metrik biaya kontrol}}{40}{table.caption.14}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{Daftar Pustaka}{40}{table.caption.14}\protected@file@percent }
-\@writefile{atoc}{\contentsline {chapter}{Daftar Pustaka}{40}{table.caption.14}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{LAMPIRAN}{44}{chapter*.15}\protected@file@percent }
-\@writefile{atoc}{\contentsline {chapter}{LAMPIRAN}{44}{chapter*.15}\protected@file@percent }
-\@writefile{toc}{\value {tocdepth}=-1}
-\@writefile{atoc}{\value {tocdepth}=-1}
-\@writefile{atoc}{\value {tocdepth}=2}
-\@writefile{toc}{\ttl@change@i {\@ne }{chapter}{0pt}{}{\makebox [\appchapnumwidth ][l]{Lampiran \thecontentslabel \quad }}{\uppercase }{\mdseries \titlerule *[0.35em]{.}\contentspage }\relax }
-\@writefile{atoc}{\ttl@change@i {\@ne }{chapter}{0pt}{}{\makebox [\appchapnumwidth ][l]{Lampiran \thecontentslabel \quad }}{\uppercase }{\mdseries \titlerule *[0.35em]{.}\contentspage }\relax }
-\@writefile{toc}{\ttl@change@v {chapter}{}{}{\vspace {2pt}}\relax }
-\@writefile{atoc}{\ttl@change@v {chapter}{}{}{\vspace {2pt}}\relax }
-\@writefile{toc}{\ttl@change@i {\@ne }{section}{\appchapnumwidth }{}{\makebox [\appsecnumwidth ][l]{\thecontentslabel \quad }}{}{\mdseries \titlerule *[0.35em]{.}\contentspage }\relax }
-\@writefile{atoc}{\ttl@change@i {\@ne }{section}{\appchapnumwidth }{}{\makebox [\appsecnumwidth ][l]{\thecontentslabel \quad }}{}{\mdseries \titlerule *[0.35em]{.}\contentspage }\relax }
-\@writefile{toc}{\ttl@change@v {section}{}{}{}\relax }
-\@writefile{atoc}{\ttl@change@v {section}{}{}{}\relax }
-\@writefile{toc}{\ttl@change@i {\@ne }{subsection}{\appsubsecindent }{}{\thecontentslabel \quad }{}{\mdseries \titlerule *[0.35em]{.}\contentspage }\relax }
-\@writefile{atoc}{\ttl@change@i {\@ne }{subsection}{\appsubsecindent }{}{\thecontentslabel \quad }{}{\mdseries \titlerule *[0.35em]{.}\contentspage }\relax }
-\@writefile{toc}{\ttl@change@v {subsection}{}{}{}\relax }
-\@writefile{atoc}{\ttl@change@v {subsection}{}{}{}\relax }
-\@writefile{toc}{\contentsline {chapter}{\numberline {A}Contoh Judul Lampiran}{44}{appendix.A}\protected@file@percent }
-\@writefile{atoc}{\contentsline {chapter}{\numberline {A}Contoh Judul Lampiran}{44}{appendix.A}\protected@file@percent }
-\@writefile{lof}{\addvspace {10\p@ }}
-\@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {A.1}Contoh Judul Anak Lampiran}{44}{section.A.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {A.1}Contoh Judul Anak Lampiran}{44}{section.A.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {B}Contoh Judul Lampiran}{45}{appendix.B}\protected@file@percent }
-\@writefile{atoc}{\contentsline {chapter}{\numberline {B}Contoh Judul Lampiran}{45}{appendix.B}\protected@file@percent }
-\@writefile{lof}{\addvspace {10\p@ }}
-\@writefile{lot}{\addvspace {10\p@ }}
+\@writefile{toc}{\contentsline {section}{\numberline {III.1}Analisis Masalah}{23}{section.3.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {III.1}Analisis Masalah}{23}{section.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {III.1}{\ignorespaces Pengaruh ukuran batch terhadap rata-rata \emph {latency} (Wu, 2020)}}{25}{figure.caption.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III.2}Analisis Solusi}{26}{section.3.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {III.2}Analisis Solusi}{26}{section.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{27}{subsection.3.2.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{27}{subsection.3.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.2}Perancangan Fungsi Biaya dan Definisi Keseimbangan}{29}{subsection.3.2.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.2}Perancangan Fungsi Biaya dan Definisi Keseimbangan}{29}{subsection.3.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.3}Kontrol Optimal Linear Quadratic Regulator (LQR)}{30}{subsection.3.2.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.3}Kontrol Optimal Linear Quadratic Regulator (LQR)}{30}{subsection.3.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.4}Pendekatan Pengendalian yang Dibandingkan}{31}{subsection.3.2.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.4}Pendekatan Pengendalian yang Dibandingkan}{31}{subsection.3.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.1}Kontrol Statik (Fixed)}{31}{subsubsection.3.2.4.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {III.2.4.1}Kontrol Statik (Fixed)}{31}{subsubsection.3.2.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.2}Kontrol Berbasis Aturan (Rule-Based)}{31}{subsubsection.3.2.4.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {III.2.4.2}Kontrol Berbasis Aturan (Rule-Based)}{31}{subsubsection.3.2.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.3}Kontrol PID}{32}{subsubsection.3.2.4.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {III.2.4.3}Kontrol PID}{32}{subsubsection.3.2.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.4}Kontrol Berbasis Jaringan Saraf Tiruan (ANN)}{32}{subsubsection.3.2.4.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {III.2.4.4}Kontrol Berbasis Jaringan Saraf Tiruan (ANN)}{32}{subsubsection.3.2.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III.3}Rancangan Solusi}{33}{section.3.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {III.3}Rancangan Solusi}{33}{section.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.3.1}Eksperimen Open-Loop dan Identifikasi Sistem}{33}{subsection.3.3.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.3.1}Eksperimen Open-Loop dan Identifikasi Sistem}{33}{subsection.3.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.3.2}Definisi Aksi Kontrol Optimal}{34}{subsection.3.3.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.3.2}Definisi Aksi Kontrol Optimal}{34}{subsection.3.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III.4}Desain Eksperimen dan Skenario Pengujian}{35}{section.3.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {III.4}Desain Eksperimen dan Skenario Pengujian}{35}{section.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.4.1}Lingkungan Uji}{35}{subsection.3.4.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.4.1}Lingkungan Uji}{35}{subsection.3.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {III.2}{\ignorespaces Arsitektur Desain yang akan diuji}}{36}{figure.caption.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.4.2}Perancangan Skenario Beban}{37}{subsection.3.4.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.4.2}Perancangan Skenario Beban}{37}{subsection.3.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {III.3}{\ignorespaces Simulasi beban dengan beberapa skenario fungsi}}{38}{figure.caption.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.4.3}Perancangan Eksperimen Perbandingan Metode}{38}{subsection.3.4.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.4.3}Perancangan Eksperimen Perbandingan Metode}{38}{subsection.3.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III.5}Metrik Evaluasi Kerja}{39}{section.3.5}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {III.5}Metrik Evaluasi Kerja}{39}{section.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.1}Metrik Inti Kinerja Sinkronisasi}{40}{subsection.3.5.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.1}Metrik Inti Kinerja Sinkronisasi}{40}{subsection.3.5.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III.1}{\ignorespaces Metrik kinerja sinkronisasi}}{42}{table.caption.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.2}Metrik Dinamika Kontrol}{42}{subsection.3.5.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.2}Metrik Dinamika Kontrol}{42}{subsection.3.5.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III.2}{\ignorespaces Metrik dinamika kontrol}}{44}{table.caption.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.3}Metrik Efisiensi Pemrosesan}{44}{subsection.3.5.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.3}Metrik Efisiensi Pemrosesan}{44}{subsection.3.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III.3}{\ignorespaces Metrik efisiensi pemrosesan}}{45}{table.caption.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.4}Metrik Biaya Kontrol}{45}{subsection.3.5.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.4}Metrik Biaya Kontrol}{45}{subsection.3.5.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III.4}{\ignorespaces Metrik biaya kontrol}}{46}{table.caption.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.5.5}Analisis Sensitivitas Fungsi Biaya}{46}{subsection.3.5.5}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.5.5}Analisis Sensitivitas Fungsi Biaya}{46}{subsection.3.5.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{Daftar Pustaka}{50}{equation.3.9}\protected@file@percent }
+\@writefile{atoc}{\contentsline {chapter}{Daftar Pustaka}{50}{equation.3.9}\protected@file@percent }
 \@writefile{toc}{\contentsfinish }
 \@writefile{atoc}{\contentsfinish }
 \@writefile{lof}{\contentsfinish }

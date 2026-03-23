@@ -22,7 +22,7 @@ Kedua model data tersebut harus tersinkronisasi melalui event handler yang mengu
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{II_1__arsitektur_cqrs.png}
-    \caption{Arsitektur CQRS (Munonye, 2020)}
+    \caption{Arsitektur CQRS}
     \label{fig:arsitektur-cqrs}
 \end{figure}
 
@@ -115,6 +115,27 @@ Memperbesar batch size untuk mengurangi backlog, misalnya, bisa justru meningkat
 Selain itu, aturan tetap tidak memiliki definisi formal tentang apa yang dimaksud ``optimal'', sehingga tidak ada jaminan bahwa keputusan yang diambil benar-benar menyeimbangkan seluruh variabel yang terlibat.
 Keterbatasan inilah yang mendorong penggunaan pendekatan berbasis model matematis, di mana hubungan antar variabel dimodelkan secara eksplisit dan keputusan kontrol dihasilkan melalui optimisasi formal (Hellerstein dkk., 2004).
 
+\subsection{Kontrol PID (Proportional-Integral-Derivative)}
+
+Salah satu pendekatan kontrol umpan balik yang paling umum digunakan dalam praktik rekayasa adalah kontrol PID (\emph{Proportional-Integral-Derivative}).
+Kontroler PID bekerja dengan menghitung sinyal koreksi berdasarkan tiga komponen yang masing-masing merespons aspek berbeda dari sinyal kesalahan (\emph{error signal}), yaitu selisih antara nilai yang diinginkan (\emph{setpoint}) dan nilai aktual yang terukur (Ogata, 2010).
+
+Secara formal, sinyal kontrol PID dinyatakan sebagai:
+
+\begin{equation}
+u(t) = K_p \, e(t) + K_i \int_0^t e(\tau) \, d\tau + K_d \, \frac{de(t)}{dt}
+\label{eq:pid}
+\end{equation}
+
+di mana $e(t)$ adalah sinyal kesalahan, $K_p$ adalah gain proporsional yang menentukan respons terhadap kesalahan saat ini, $K_i$ adalah gain integral yang mengoreksi akumulasi kesalahan dari waktu ke waktu, dan $K_d$ adalah gain derivatif yang merespons laju perubahan kesalahan untuk meredam osilasi.
+
+Kelebihan utama PID adalah kesederhanaan implementasi dan kemampuannya yang telah terbukti pada berbagai aplikasi industri.
+Proses tuning parameter $K_p$, $K_i$, dan $K_d$ dapat dilakukan melalui metode empiris seperti Ziegler-Nichols atau melalui simulasi (Ogata, 2010).
+Namun, PID memiliki keterbatasan mendasar ketika diterapkan pada sistem dengan banyak variabel.
+Kontroler PID pada dasarnya bersifat SISO (\emph{Single-Input Single-Output}), yaitu hanya mengendalikan satu variabel output berdasarkan satu sinyal kesalahan.
+Pada sistem sinkronisasi CQRS yang melibatkan beberapa variabel state (backlog, utilisasi CPU, memori, I/O) dan beberapa variabel kontrol (batch size, poll interval), penerapan PID memerlukan beberapa loop kontrol independen yang masing-masing hanya mengamati satu variabel.
+Pendekatan multi-loop ini tidak memperhitungkan interaksi antar variabel, sehingga penyesuaian pada satu parameter dapat menimbulkan efek yang tidak diinginkan pada variabel lain (Hellerstein dkk., 2004).
+
 \subsection{Teori Kontrol pada Sistem Perangkat Lunak}
 
 Teori kontrol merupakan disiplin ilmu yang membahas bagaimana suatu sistem dapat mengatur dirinya sendiri berdasarkan sinyal umpan balik (\emph{feedback}).
@@ -126,9 +147,15 @@ Pendekatan ini relevan ketika sistem perlu menyeimbangkan tujuan yang saling ber
 
 Model formal dari sistem yang dikendalikan biasanya dinyatakan dalam bentuk \emph{state-space representation}, di mana sistem digambarkan sebagai hubungan linier antara status saat ini, aksi kontrol, dan status selanjutnya:
 
-\[x_{t + 1} = Ax_{t} + Bu_{t}\]
+\begin{equation}
+x_{t + 1} = Ax_{t} + Bu_{t}
+\label{eq:state-space}
+\end{equation}
 
-\[y_{t} = Cx_{t} + Du_{t}\]
+\begin{equation}
+y_{t} = Cx_{t} + Du_{t}
+\label{eq:output}
+\end{equation}
 
 Dalam konteks sistem sinkronisasi data, status sistem \emph{x} dapat berupa utilisasi CPU, jumlah antrian pesan, atau utilisasi memori, sedangkan \emph{u} adalah tindakan yang bisa diambil sistem seperti memperbesar batch atau memperpanjang interval polling.
 Matriks \emph{A} dan \emph{B} menggambarkan dinamika sistem, yaitu bagaimana sistem berubah sebagai akibat dari tindakan yang dilakukan.
@@ -144,7 +171,10 @@ Keunggulan utama dari LQR adalah kemampuannya untuk secara matematis menyeimbang
 
 Secara formal, LQR bertujuan untuk meminimalkan fungsi biaya kuadratik berikut ini:
 
-\[J = \sum_{t = 0}^{\infty}{x_{t}^{T}Qx_{t} + u_{t}^{T}Ru_{t}}\]
+\begin{equation}
+J = \sum_{t = 0}^{\infty}{x_{t}^{T}Qx_{t} + u_{t}^{T}Ru_{t}}
+\label{eq:cost-lqr}
+\end{equation}
 
 Di mana:
 
@@ -171,7 +201,10 @@ Mekanisme prioritisasi semacam ini tidak dimiliki oleh pendekatan berbasis atura
 
 Solusi optimal dari fungsi biaya ini adalah hukum kontrol linier:
 
-\[u_{t} = - Kx_{t}\]
+\begin{equation}
+u_{t} = - Kx_{t}
+\label{eq:kontrol-optimal}
+\end{equation}
 
 dengan \emph{K} adalah matriks penguat (gain) yang diperoleh dari penyelesaian persamaan Riccati.
 Matriks ini menunjukkan seberapa besar tindakan korektif yang harus diambil untuk setiap kesalahan yang terdeteksi dalam status sistem.
@@ -188,3 +221,21 @@ Hasilnya berupa estimasi terhadap matriks A dan B, yang diperlukan untuk meranca
 Walaupun implementasinya lebih kompleks dibandingkan pendekatan seperti PID, LQR menawarkan keunggulan dalam hal kestabilan, keoptimalan, dan fleksibilitas.
 Penentuan parameter kontrol pada LQR juga lebih sesuai untuk diterapkan pada kondisi berbasis \emph{trade-off} karena didasarkan pada matriks biaya yang bisa diatur untuk menentukan variabel mana yang akan diunggulkan dibanding yang lain.
 Dengan karakteristik tersebut, LQR sesuai untuk diterapkan pada pengendalian sinkronisasi data yang melibatkan beberapa variabel sekaligus.
+
+\subsection{Pendekatan Berbasis Jaringan Saraf Tiruan}
+
+Selain pendekatan berbasis model seperti PID dan LQR, terdapat pendekatan alternatif yang tidak memerlukan model eksplisit dari sistem yang dikendalikan.
+Jaringan saraf tiruan (\emph{Artificial Neural Network}, ANN) merupakan salah satu pendekatan berbasis data yang mampu mempelajari pemetaan antara kondisi sistem dan aksi kontrol secara langsung dari data observasi, tanpa memerlukan persamaan dinamika sistem secara eksplisit (Haykin, 2009).
+
+Dalam konteks pengendalian, ANN dapat dilatih untuk mengaproksimasi kebijakan kontrol optimal berdasarkan pasangan data input-output yang diperoleh dari eksperimen.
+Input berupa vektor state yang merepresentasikan kondisi sistem pada suatu waktu, dan output berupa aksi kontrol yang menghasilkan kinerja terbaik untuk kondisi tersebut.
+Dengan arsitektur yang memadai dan data pelatihan yang representatif, ANN mampu menangkap hubungan nonlinier antara state dan kontrol yang mungkin tidak tertangkap oleh model linier (Goodfellow dkk., 2016).
+
+Kelebihan utama pendekatan berbasis ANN adalah fleksibilitasnya dalam menangani sistem yang kompleks dan nonlinier tanpa memerlukan asumsi linearitas.
+Selain itu, ANN bersifat MIMO (\emph{Multi-Input Multi-Output}) secara alami, sehingga dapat menerima seluruh variabel state sebagai input dan menghasilkan seluruh variabel kontrol sebagai output secara simultan.
+
+Namun, pendekatan ini memiliki beberapa keterbatasan.
+ANN memerlukan data pelatihan yang cukup dan representatif untuk menghasilkan kebijakan kontrol yang baik.
+Model yang dihasilkan bersifat \emph{black-box}, sehingga sulit untuk menganalisis atau menjamin perilaku kontroler pada kondisi yang belum pernah dijumpai selama pelatihan.
+Selain itu, tidak ada jaminan formal mengenai stabilitas atau optimalitas dari kebijakan kontrol yang dihasilkan, berbeda dengan LQR yang memiliki landasan teori optimasi dan analisis stabilitas (Ogata, 2010).
+Keterbatasan ini menjadikan ANN sebagai pendekatan pembanding yang menarik untuk menilai sejauh mana pendekatan berbasis model (LQR) memberikan keunggulan dibandingkan pendekatan berbasis data pada permasalahan pengendalian sinkronisasi.

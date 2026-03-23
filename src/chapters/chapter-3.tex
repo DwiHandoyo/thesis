@@ -69,9 +69,10 @@ Pendekatan ini sejalan dengan praktik pemodelan sistem komputasi sebagai sistem 
 Pada message sink, nilai-nilai matriks A, B, C, dan D diperoleh dari eksperimen dengan pendekatan open-loop agar diketahui pengaruh variabel-variabel kontrol terhadap variabel-variabel state.
 Vektor aksi kontrol didefinisikan sebagai:
 
-\[
+\begin{equation}
 \mathbf{u} = \begin{bmatrix} b \\ p \end{bmatrix}
-\]
+\label{eq:vektor-kontrol}
+\end{equation}
 
 di mana:
 \begin{enumerate}
@@ -81,9 +82,10 @@ di mana:
 
 Vektor state $\mathbf{x}$ didefinisikan sebagai:
 
-\[
-\mathbf{x} = \begin{bmatrix} n \\ c \\ m \\ o \end{bmatrix}
-\]
+\begin{equation}
+\mathbf{x} = \begin{bmatrix} n \\ c \\ m \\ o \\ l \end{bmatrix}
+\label{eq:vektor-state}
+\end{equation}
 
 di mana:
 \begin{enumerate}
@@ -91,11 +93,22 @@ di mana:
 \item $c$ adalah \emph{CPU utilization}
 \item $m$ adalah \emph{memory utilization}
 \item $o$ adalah \emph{I/O operation}
+\item $l$ adalah latensi sinkronisasi rata-rata
 \end{enumerate}
 
-Pemilihan variabel ini didasarkan pada dua pertimbangan utama.
+Latensi sinkronisasi $l$ diukur secara langsung menggunakan mekanisme \emph{manual offset commit} pada \emph{message broker}. Pada mekanisme ini, consumer tidak melakukan \emph{auto-commit} offset setelah mengambil batch dari broker, melainkan menunda commit hingga \emph{read database} mengirimkan sinyal \emph{acknowledgement} yang mengonfirmasi bahwa seluruh data dalam batch telah berhasil ditulis. Dengan demikian, latensi sinkronisasi untuk setiap batch dapat diukur sebagai:
+
+\begin{equation}
+l = t_{\text{ack}} - t_{\text{produce}}
+\label{eq:latency-measurement}
+\end{equation}
+
+\noindent di mana $t_{\text{produce}}$ adalah waktu event diproduksi pada sisi tulis dan $t_{\text{ack}}$ adalah waktu \emph{acknowledgement} diterima dari \emph{read database} setelah penulisan selesai. Pendekatan ini memastikan bahwa latensi yang diukur mencakup seluruh waktu propagasi end-to-end, termasuk waktu tunggu di antrian dan waktu pemrosesan batch.
+
+Pemilihan variabel state didasarkan pada tiga pertimbangan utama.
 Pertama, variabel dapat diobservasi atau diukur secara real-time.
 Kedua, variabel tersebut memiliki pengaruh langsung terhadap laju sinkronisasi dan tekanan terhadap \emph{read database}.
+Ketiga, variabel latensi memberikan umpan balik langsung tentang kualitas sinkronisasi dari perspektif end-to-end, sehingga controller dapat memperhitungkan dampak aktual dari aksi kontrol terhadap waktu propagasi data.
 
 Dalam konteks sistem nyata, hubungan antara \emph{state} dan \emph{control} bersifat nonlinier.
 Namun, untuk keperluan perancangan kontrol optimal, sistem diasumsikan dapat didekati secara linier pada rentang operasi tertentu (\emph{linearization around operating point}).
@@ -109,7 +122,10 @@ Keseimbangan tersebut tidak dapat direpresentasikan oleh satu metrik tunggal, me
 
 Untuk merepresentasikan tujuan tersebut secara formal, digunakan fungsi biaya kuadratik:
 
-\[J = \sum_{t=0}^{\infty} \left( x_t^T Q x_t + u_t^T R u_t \right)\]
+\begin{equation}
+J = \sum_{t=0}^{\infty} \left( x_t^T Q x_t + u_t^T R u_t \right)
+\label{eq:fungsi-biaya}
+\end{equation}
 
 Komponen pertama dari fungsi biaya memberikan penalti terhadap deviasi kondisi sistem dari keadaan yang diinginkan, sementara komponen kedua memberikan penalti terhadap besarnya aksi kontrol yang diterapkan.
 Dengan formulasi ini, sistem tidak hanya diarahkan untuk mengurangi backlog atau utilisasi sumber daya, tetapi juga menghindari perubahan parameter sinkronisasi yang terlalu agresif atau terlalu lambat.
@@ -126,7 +142,10 @@ Dengan model ini, LQR menghitung kebijakan kontrol yang meminimalkan fungsi biay
 
 Solusi optimal dari fungsi biaya ini adalah hukum kontrol linier:
 
-\[u_t = -K x_t\]
+\begin{equation}
+u_t = -K x_t
+\label{eq:hukum-kontrol}
+\end{equation}
 
 dengan $K$ adalah matriks penguat (gain) yang diperoleh dari penyelesaian persamaan Riccati.
 Matriks ini menunjukkan seberapa besar tindakan korektif yang harus diambil untuk setiap kesalahan yang terdeteksi dalam status sistem.
@@ -138,6 +157,45 @@ Kebijakan kontrol LQR diperoleh melalui penyelesaian persamaan Riccati, sehingga
 Keterbatasan utama LQR terletak pada kebutuhan akan model sistem dan penentuan bobot fungsi biaya yang tepat.
 Proses identifikasi model dan penalaan bobot memerlukan eksperimen awal dan pemahaman terhadap dinamika sistem.
 Meskipun demikian, LQR memberikan kerangka pengendalian yang interpretable dan konsisten secara teori, sehingga cocok digunakan sebagai pendekatan utama dalam penelitian ini.
+
+\subsection{Pendekatan Pengendalian yang Dibandingkan}
+
+Untuk mengevaluasi efektivitas LQR secara menyeluruh, penelitian ini membandingkan lima pendekatan pengendalian yang merepresentasikan spektrum dari tanpa kontrol hingga pendekatan berbasis data.
+Kelima pendekatan ini menggunakan abstraksi sistem dan fungsi biaya yang sama sebagaimana didefinisikan pada Persamaan~\ref{eq:vektor-kontrol}--\ref{eq:vektor-state} dan Persamaan~\ref{eq:fungsi-biaya}, sehingga perbandingan dilakukan pada kerangka evaluasi yang konsisten.
+
+\subsubsection{Kontrol Statik (Fixed)}
+
+Pendekatan kontrol statik menggunakan nilai batch size dan poll interval yang tetap sepanjang eksperimen.
+Nilai parameter ditentukan berdasarkan rata-rata kondisi operasional normal yang diperoleh dari eksperimen open-loop.
+Pendekatan ini berfungsi sebagai baseline untuk menunjukkan kebutuhan akan mekanisme pengendalian adaptif.
+Tanpa kemampuan menyesuaikan parameter terhadap perubahan beban, kontrol statik diharapkan menunjukkan kinerja yang menurun secara signifikan ketika kondisi operasional menyimpang dari asumsi awal.
+
+\subsubsection{Kontrol Berbasis Aturan (Rule-Based)}
+
+Pendekatan berbasis aturan menggunakan sekumpulan aturan threshold untuk menyesuaikan parameter sinkronisasi.
+Aturan dirancang berdasarkan pemahaman domain tentang hubungan antara variabel state dan parameter kontrol.
+Sebagai contoh, ketika backlog melebihi batas tertentu, batch size diperbesar untuk meningkatkan laju konsumsi; ketika utilisasi CPU melebihi ambang yang ditentukan, batch size dikurangi untuk menghindari kelebihan beban.
+
+Pendekatan ini merepresentasikan praktik umum dalam pengelolaan sistem perangkat lunak, di mana administrator menetapkan aturan penyesuaian berdasarkan pengalaman operasional.
+Keterbatasan utama pendekatan ini adalah ketidakmampuannya mempertimbangkan interaksi antar variabel secara simultan dan tidak adanya definisi formal mengenai keseimbangan yang ingin dicapai.
+
+\subsubsection{Kontrol PID}
+
+Kontrol PID diterapkan sebagai pendekatan kontrol klasik yang menggunakan satu sinyal kesalahan untuk menghasilkan aksi koreksi.
+Dalam penelitian ini, PID dikonfigurasi sebagai kontroler single-loop dengan backlog sebagai variabel yang dikendalikan dan batch size sebagai variabel kontrol.
+Sinyal kesalahan dihitung sebagai selisih antara nilai backlog aktual dan nilai referensi yang diinginkan.
+
+Parameter $K_p$, $K_i$, dan $K_d$ ditentukan melalui metode tuning berdasarkan data eksperimen open-loop.
+PID berfungsi sebagai representasi pendekatan kontrol klasik yang sudah mapan, dengan keterbatasan utama pada sifat SISO yang hanya mengamati satu variabel state dan mengendalikan satu variabel kontrol, tanpa memperhitungkan trade-off multi-variabel secara eksplisit.
+
+\subsubsection{Kontrol Berbasis Jaringan Saraf Tiruan (ANN)}
+
+Pendekatan berbasis ANN digunakan sebagai representasi pendekatan data-driven yang mempelajari kebijakan kontrol langsung dari data tanpa memerlukan model eksplisit dinamika sistem.
+Jaringan saraf tiruan dilatih menggunakan data dari eksperimen open-loop, dengan input berupa vektor state $\mathbf{x} = [n, c, m, o]^T$ dan target output berupa aksi kontrol optimal $u^*(t) = [b, p]^T$ yang telah didefinisikan pada Persamaan~\ref{eq:aksi-optimal}.
+
+Arsitektur jaringan menggunakan beberapa lapisan tersembunyi (\emph{hidden layers}) dengan fungsi aktivasi nonlinier.
+Proses pelatihan dilakukan dengan meminimalkan kesalahan antara output jaringan dan aksi kontrol optimal pada data pelatihan.
+Pendekatan ini berfungsi sebagai pembanding untuk menilai apakah pendekatan berbasis data yang fleksibel mampu menghasilkan kinerja yang lebih baik dibandingkan pendekatan berbasis model seperti LQR, meskipun tanpa jaminan formal mengenai stabilitas dan optimalitas.
 
 \section{Rancangan Solusi}
 
@@ -167,9 +225,12 @@ Dalam penelitian ini, definisi optimal tidak diartikan sebagai minimisasi satu m
 
 Secara formal, untuk kondisi sistem $x(t)$, aksi kontrol optimal didefinisikan sebagai:
 
-\[u^*(t) = \arg\min_{u \in \mathcal{U}} J(u, x(t))\]
+\begin{equation}
+u^*(t) = \arg\min_{u \in \mathcal{U}} J(u, x(t))
+\label{eq:aksi-optimal}
+\end{equation}
 
-di mana $\mathcal{U}$ adalah himpunan kandidat aksi kontrol yang memenuhi batas operasional sistem, dan $J$ adalah fungsi biaya yang merepresentasikan tujuan pengendalian sesuai dengan persamaan pada bagian III.2.2.
+di mana $\mathcal{U}$ adalah himpunan kandidat aksi kontrol yang memenuhi batas operasional sistem, dan $J$ adalah fungsi biaya yang merepresentasikan tujuan pengendalian sesuai dengan Persamaan~\ref{eq:fungsi-biaya}.
 
 Pada suatu kondisi awal sistem yang diamati, beberapa kombinasi parameter sinkronisasi, yaitu batch size dan poll interval, diuji secara terpisah.
 Selama satu periode pengamatan, aksi kontrol dijaga tetap konstan untuk setiap kombinasi yang diuji, sementara respons sistem dicatat secara periodik.
@@ -248,14 +309,30 @@ Dengan menggunakan kombinasi keempat pola beban tersebut, eksperimen dapat mengu
     \label{fig:skenario-beban}
 \end{figure}
 
+\subsection{Perancangan Eksperimen Perbandingan Metode}
+
+Untuk memastikan keadilan perbandingan, seluruh pendekatan pengendalian dijalankan pada skenario beban yang sama dengan kondisi awal sistem yang identik.
+Setiap metode menerima informasi state yang sama pada setiap interval kontrol dan menghasilkan aksi kontrol sesuai mekanismenya masing-masing.
+Interval pengambilan keputusan kontrol dijaga tetap untuk seluruh metode agar perbedaan kinerja yang diamati berasal dari strategi pengendalian, bukan dari perbedaan frekuensi pengambilan keputusan.
+
+Konfigurasi masing-masing metode ditentukan sebagai berikut.
+Kontrol statik menggunakan nilai batch size dan poll interval yang ditetapkan berdasarkan rata-rata parameter pada kondisi beban normal dari data eksperimen open-loop.
+Kontrol berbasis aturan menggunakan sekumpulan aturan threshold yang dirancang berdasarkan hubungan antar variabel yang teramati pada eksperimen open-loop, dengan batas threshold ditentukan dari distribusi nilai variabel state selama eksperimen.
+Kontrol PID dikonfigurasi sebagai kontroler single-loop pada variabel backlog, dengan parameter $K_p$, $K_i$, dan $K_d$ ditentukan melalui metode tuning berbasis data eksperimen open-loop.
+Kontrol LQR menggunakan matriks $A$ dan $B$ yang diidentifikasi dari eksperimen open-loop, serta matriks $Q$ dan $R$ yang mencerminkan prioritas pengendalian yang telah ditetapkan pada Persamaan~\ref{eq:fungsi-biaya}.
+Kontrol berbasis ANN menggunakan jaringan yang dilatih dari data eksperimen open-loop dengan target aksi kontrol optimal $u^*(t)$ yang telah didefinisikan pada Persamaan~\ref{eq:aksi-optimal}.
+
+Setiap metode dijalankan pada keempat skenario beban (step, ramp, impulse, dan step periodik) dengan durasi eksperimen yang sama.
+Hasil eksperimen dievaluasi menggunakan seluruh metrik yang telah didefinisikan pada bagian III.5, sehingga perbandingan mencakup aspek kinerja sinkronisasi, dinamika kontrol, efisiensi pemrosesan, dan biaya kontrol.
+
 \section{Metrik Evaluasi Kerja}
 
-Evaluasi kinerja dalam penelitian ini dilakukan untuk menilai sejauh mana mekanisme pengendalian berbasis Linear Quadratic Regulator (LQR) mampu menjaga keseimbangan antara kualitas sinkronisasi data dan efisiensi penggunaan sumber daya sistem.
+Evaluasi kinerja dalam penelitian ini dilakukan untuk menilai sejauh mana mekanisme pengendalian mampu menjaga keseimbangan antara kualitas sinkronisasi data dan efisiensi penggunaan sumber daya sistem.
 Oleh karena itu, metrik evaluasi dipilih secara selektif agar dapat merepresentasikan tujuan pengendalian yang telah dirumuskan pada tahap perancangan solusi, serta mampu menangkap respons sistem pada berbagai kondisi beban dan pola perubahan beban.
 
 Metrik evaluasi dikelompokkan berdasarkan perannya dalam analisis kinerja sistem, meliputi metrik inti kinerja sinkronisasi, metrik dinamika kontrol, metrik efisiensi pemrosesan, dan metrik biaya kontrol.
 Pengelompokan ini bertujuan untuk memisahkan pengukuran kualitas sinkronisasi, karakteristik respons dinamis, efisiensi operasional, dan kesesuaian solusi terhadap formulasi optimasi yang digunakan.
-Seluruh metrik diukur secara periodik selama eksperimen dan digunakan secara konsisten sebagai dasar analisis dan perbandingan pada bab hasil dan pembahasan.
+Seluruh metrik diukur secara periodik selama eksperimen dan digunakan secara konsisten sebagai dasar analisis dan perbandingan kelima pendekatan pengendalian pada bab hasil dan pembahasan.
 
 \subsection{Metrik Inti Kinerja Sinkronisasi}
 
@@ -417,3 +494,81 @@ Dengan menganalisis kedua komponen biaya secara terpisah, penelitian ini dapat m
     \hline
     \end{tabular}
 \end{table}
+
+\subsection{Analisis Sensitivitas Fungsi Biaya}
+
+Nilai fungsi biaya $J$ bergantung pada pemilihan matriks pembobot $Q$ dan $R$ yang ditentukan oleh peneliti.
+Pemilihan bobot yang berbeda akan menghasilkan nilai $J$ yang berbeda pula, sehingga kesimpulan yang diambil berdasarkan satu konfigurasi $Q$ dan $R$ tertentu berpotensi tidak berlaku secara umum.
+Untuk mengatasi keterbatasan ini, dilakukan analisis sensitivitas dengan mengevaluasi nilai fungsi biaya seluruh metode pengendalian pada beberapa variasi konfigurasi $Q$ dan $R$.
+
+Analisis sensitivitas dilakukan dengan mendefinisikan empat konfigurasi pembobot yang merepresentasikan prioritas pengendalian yang berbeda.
+Konfigurasi pertama memberikan bobot yang lebih besar pada komponen backlog sinkronisasi, sehingga merepresentasikan skenario di mana pengurangan backlog menjadi prioritas utama.
+Konfigurasi kedua memberikan bobot yang lebih besar pada komponen utilisasi sumber daya, sehingga merepresentasikan skenario di mana efisiensi penggunaan CPU dan memori menjadi perhatian utama.
+Konfigurasi ketiga memberikan bobot yang lebih besar pada komponen latensi sinkronisasi, sehingga merepresentasikan skenario di mana kecepatan propagasi data menjadi prioritas utama.
+Konfigurasi keempat menggunakan bobot yang setara untuk seluruh komponen state, sehingga merepresentasikan keseimbangan antara seluruh tujuan pengendalian.
+
+Pada setiap konfigurasi, nilai fungsi biaya dihitung untuk seluruh metode pengendalian menggunakan data trajectory yang sama dari hasil eksperimen.
+Dengan demikian, perbedaan nilai $J$ antar metode pada suatu konfigurasi mencerminkan perbedaan kinerja, bukan perbedaan data.
+
+Secara konkret, empat konfigurasi matriks pembobot $Q$ yang digunakan adalah sebagai berikut. Pada konfigurasi pertama (prioritas backlog), elemen diagonal $Q$ yang berkorespondensi dengan backlog diberikan nilai 10, sedangkan elemen lainnya bernilai 1:
+
+\[
+Q_1 = \begin{bmatrix} 10 & 0 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 1 \end{bmatrix}
+\]
+
+\noindent Pada konfigurasi kedua (prioritas resource), elemen diagonal yang berkorespondensi dengan utilisasi CPU, memori, dan I/O diberikan nilai 10, sedangkan backlog bernilai 1:
+
+\[
+Q_2 = \begin{bmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 10 & 0 & 0 & 0 \\ 0 & 0 & 10 & 0 & 0 \\ 0 & 0 & 0 & 10 & 0 \\ 0 & 0 & 0 & 0 & 1 \end{bmatrix}
+\]
+
+\noindent Pada konfigurasi ketiga (prioritas latensi), elemen diagonal yang berkorespondensi dengan latensi sinkronisasi diberikan nilai 10, sedangkan elemen lainnya bernilai 1:
+
+\[
+Q_3 = \begin{bmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 10 \end{bmatrix}
+\]
+
+\noindent Pada konfigurasi keempat (seimbang), seluruh elemen diagonal bernilai sama sehingga $Q_4$ merupakan matriks identitas:
+
+\[
+Q_4 = \begin{bmatrix} 1 & 0 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 & 1 \end{bmatrix} = I
+\]
+
+\noindent Matriks $R$ ditetapkan konstan di seluruh konfigurasi:
+
+\[
+R = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix} = I
+\]
+
+\noindent sehingga variasi hanya terjadi pada bobot state dan perbedaan nilai $J$ antar konfigurasi murni mencerminkan pengaruh prioritas pengendalian.
+
+Pada setiap konfigurasi, nilai fungsi biaya $J$ dihitung untuk seluruh lima metode pengendalian, yaitu kontrol statik, rule-based, PID, LQR, dan ANN, menggunakan data trajectory yang sama dari hasil eksperimen. Dengan demikian, perbedaan nilai $J$ antar metode pada suatu konfigurasi mencerminkan perbedaan kinerja, bukan perbedaan data.
+
+Untuk memperoleh ukuran perbandingan yang tidak bergantung pada skala absolut nilai $J$, digunakan \emph{normalized regret}. Pada setiap konfigurasi $k$, nilai fungsi biaya metode $i$ dinormalisasi terhadap metode dengan nilai $J$ terendah pada konfigurasi tersebut:
+
+\begin{equation}
+    \hat{J}_i^{(k)} = \frac{J_i^{(k)} - J_{\min}^{(k)}}{J_{\min}^{(k)}}
+    \label{eq:normalized-regret}
+\end{equation}
+
+\noindent di mana $J_{\min}^{(k)} = \min_{i} J_i^{(k)}$ adalah nilai fungsi biaya terendah di antara seluruh metode pada konfigurasi $k$. Nilai $\hat{J}_i^{(k)} = 0$ menunjukkan bahwa metode $i$ adalah yang terbaik pada konfigurasi tersebut, sedangkan nilai yang lebih besar menunjukkan seberapa jauh metode tersebut dari performa terbaik secara proporsional.
+
+Berdasarkan \emph{normalized regret}, adaptabilitas setiap metode terhadap variasi prioritas pengendalian dievaluasi menggunakan dua ukuran. Ukuran pertama adalah \emph{mean regret}, yang didefinisikan sebagai rata-rata \emph{normalized regret} di seluruh konfigurasi:
+
+\begin{equation}
+    \bar{\hat{J}}_i = \frac{1}{K} \sum_{k=1}^{K} \hat{J}_i^{(k)}
+    \label{eq:mean-regret}
+\end{equation}
+
+\noindent di mana $K$ adalah jumlah konfigurasi pembobot yang diuji. Metode dengan \emph{mean regret} terendah dianggap sebagai metode terbaik secara keseluruhan karena secara rata-rata paling dekat dengan performa optimal di seluruh konfigurasi.
+
+Ukuran kedua adalah \emph{max regret}, yang didefinisikan sebagai nilai \emph{normalized regret} tertinggi di antara seluruh konfigurasi:
+
+\begin{equation}
+    \hat{J}_i^{\max} = \max_{k} \hat{J}_i^{(k)}
+    \label{eq:max-regret}
+\end{equation}
+
+\noindent Metode dengan \emph{max regret} terendah dianggap sebagai metode paling robust karena tidak pernah mengalami penurunan performa yang signifikan pada konfigurasi manapun.
+
+Nilai \emph{mean regret} dan \emph{max regret} dihitung untuk seluruh lima metode pengendalian berdasarkan hasil evaluasi pada ketiga konfigurasi pembobot. Metode dengan \emph{mean regret} terendah dianggap sebagai metode terbaik secara keseluruhan karena secara rata-rata paling dekat dengan performa optimal, sedangkan metode dengan \emph{max regret} terendah dianggap sebagai metode paling robust karena tidak pernah mengalami degradasi performa yang signifikan pada konfigurasi manapun. Kesimpulan perbandingan metode dianggap robust apabila ranking relatif antar metode tetap konsisten di seluruh variasi konfigurasi $Q$ dan $R$. Apabila kedua ukuran menunjuk pada metode yang sama, maka kesimpulan keunggulan metode tersebut menjadi semakin kuat. Sebaliknya, apabila ranking berubah secara signifikan pada konfigurasi tertentu, maka keunggulan suatu metode dinyatakan bergantung pada prioritas pengendalian yang dipilih, dan hal ini dilaporkan sebagai bagian dari analisis hasil.
