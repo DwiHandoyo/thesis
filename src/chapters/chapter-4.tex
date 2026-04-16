@@ -1,29 +1,30 @@
 \chapter{Eksperimen dan Analisis}
 
-Untuk menguji pendekatan pengendalian yang telah dirancang, dilakukan dua tahap eksperimen.
-Tahap pertama adalah eksperimen open-loop untuk mengidentifikasi model dinamika sistem.
-Tahap kedua adalah eksperimen closed-loop untuk membandingkan performa berbagai strategi pengendalian pada beberapa skenario beban.
+Bab ini memaparkan seluruh tahapan eksperimen yang dilakukan, mulai dari perancangan rentang kontrol,
+identifikasi sistem, pelatihan model ANN, hingga evaluasi perbandingan performa kontroler dalam
+skenario \emph{closed-loop}.
+Setiap keputusan perancangan disertai justifikasi kuantitatif dari data eksperimen.
 
 % =============================================================================
 % DATA COMMANDS — ganti nilai di sini jika data eksperimen berubah
 % =============================================================================
 
 % --- Open-loop ---
-\newcommand{\openloopdate}{28 Maret 2026}
-\newcommand{\openloopsamples}{6760}
+\newcommand{\openloopdate}{15 April 2026}
+\newcommand{\openloopsamples}{8146}
+\newcommand{\openloopsteps}{122}
 \newcommand{\openloopinterval}{1}
 
-% --- Fit quality (R²) ---
-\newcommand{\rsqQueue}{0,986}
-\newcommand{\rsqCpu}{0,635}
-\newcommand{\rsqMem}{0,106}
-\newcommand{\rsqIo}{0,173}
-\newcommand{\rsqLatency}{0,940}
-
-% --- Closed-loop ---
-\newcommand{\closedloopdate}{1 April 2026}
-\newcommand{\closedloopsamples}{1352}
-\newcommand{\closedloopduration}{600}
+% --- Capacity benchmark ---
+\newcommand{\capbenchdate}{14 April 2026}
+\newcommand{\tfetchms}{203}
+\newcommand{\batchminCap}{3}
+\newcommand{\batchmaxCap}{2036}
+\newcommand{\pollminCap}{604}
+\newcommand{\pollmaxCap}{1599}
+\newcommand{\kneepoint}{500}
+\newcommand{\kneeCpu}{31.5}
+\newcommand{\docsizeKB}{0.463}
 
 % --- Resource config ---
 \newcommand{\escpus}{1,0}
@@ -31,50 +32,196 @@ Tahap kedua adalah eksperimen closed-loop untuk membandingkan performa berbagai 
 \newcommand{\esjavaheap}{512 MB}
 \newcommand{\esversion}{8.10.0}
 
-% --- Static baseline ---
-\newcommand{\staticbatch}{250}
-\newcommand{\staticpoll}{1000}
+% --- Closed-loop run ---
+\newcommand{\closedloopdate}{15--16 April 2026}
+\newcommand{\closedlooprun}{closed\_loop\_20260415\_231610}
+\newcommand{\closedloopsamples}{1930}
+
+% --- Normalization override (LQR) ---
+\newcommand{\normQueueMean}{0}
+\newcommand{\normQueueStd}{5000}
+\newcommand{\normBatchMean}{250}
+\newcommand{\normBatchStd}{250}
+\newcommand{\normInvPollMean}{5,0}
+\newcommand{\normInvPollStd}{2,0}
 
 % =============================================================================
 
 \section{Tujuan Eksperimen}
 
-Eksperimen pada penelitian ini bertujuan untuk menjawab tiga hal.
-Pertama, apakah dinamika sinkronisasi CQRS dapat dimodelkan sebagai sistem linier dalam kerangka state-space.
-Kedua, apakah kontroler LQR yang dirancang dari model tersebut mampu mengatur parameter sinkronisasi secara adaptif.
-Ketiga, bagaimana performa LQR dibandingkan dengan pendekatan lain, yaitu parameter statik, aturan berbasis ambang batas, dan PID.
+Eksperimen pada penelitian ini bertujuan untuk menjawab empat pertanyaan utama.
+Pertama, bagaimana rentang operasional yang tepat untuk parameter kontrol berdasarkan kapasitas sistem
+yang terukur, bukan berdasarkan tebakan.
+Kedua, apakah dinamika sinkronisasi CQRS dapat dimodelkan cukup baik untuk mendukung rancangan
+kontroler berbasis model.
+Ketiga, apakah kontroler ANN berbasis \emph{Maximum Likelihood Estimation} (MLE) dapat melampaui performa
+LQR tanpa menggunakan LQR sebagai orakel pelatihan.
+Keempat, bagaimana setiap kontroler berperilaku pada skenario beban yang berbeda dan apa yang
+membedakan konsistensi masing-masing.
 
 \section{Lingkungan Eksperimen}
 
 Seluruh eksperimen dijalankan pada lingkungan yang sama untuk menjaga konsistensi hasil.
-Arsitektur sistem uji mengikuti rancangan pada Bab III (lihat Gambar~\ref{fig:arsitektur-desain}), terdiri dari write model, message broker, message sink, dan read database.
+Arsitektur sistem uji mengikuti rancangan pada Bab~III, terdiri dari \emph{write model} (PostgreSQL),
+\emph{message broker} (Kafka dengan Debezium CDC), \emph{message sink}, dan \emph{read database}
+(Elasticsearch).
 
-Komponen read database menggunakan Elasticsearch versi \esversion{} dengan alokasi \escpus{} CPU, memori \esmemory{}, dan Java heap \esjavaheap{}.
-Konfigurasi ini dijaga tetap selama seluruh eksperimen.
+Komponen \emph{read database} menggunakan Elasticsearch versi~\esversion{} dengan alokasi~\escpus{}
+CPU, memori~\esmemory{}, dan Java heap~\esjavaheap{}.
+Konfigurasi ini dijaga tetap selama seluruh eksperimen agar perbedaan performa murni mencerminkan
+perbedaan strategi pengendalian.
 
-% TODO: tambahkan tabel spesifikasi hardware lengkap jika diperlukan
+\section{Penentuan Rentang Kontrol dari Kapasitas Sistem}
+
+Sebelum menjalankan eksperimen identifikasi sistem, terlebih dahulu dilakukan pengukuran kapasitas
+\emph{throughput} untuk menentukan rentang operasional yang terjustifikasi secara empiris.
+
+\subsection{Pengukuran Kapasitas (\emph{Capacity Benchmark})}
+
+Eksperimen \emph{capacity benchmark} dilaksanakan pada~\capbenchdate{}.
+Parameter batch size divariasikan pada tujuh level (1, 10, 50, 100, 250, 500, 1000) dengan
+\emph{poll interval} tetap 500~ms.
+Untuk setiap level, \emph{throughput} aktual (msg/s), utilisasi CPU, dan waktu pengindeksan per
+dokumen dicatat selama 30 detik dalam kondisi antrean selalu tersedia.
+
+Hasil pengukuran menunjukkan bahwa ukuran dokumen rata-rata adalah~\docsizeKB~KB dan waktu
+\emph{round-trip} Kafka (\emph{t\_fetch}) adalah~\tfetchms~ms.
+Nilai~\emph{t\_fetch} ini menjadi parameter kunci dalam perancangan rentang \emph{poll interval}
+(lihat Subbab~\ref{sec:poll-range}).
+
+\begin{table}[H]
+    \centering
+    \caption{Hasil pengukuran \emph{throughput} dan utilisasi CPU per level \emph{batch size}}
+    \label{tab:capacity-benchmark}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|r|r|r|r|}
+    \hline
+    \textbf{Batch} & \textbf{Throughput (msg/s)} & \textbf{CPU (\%)} & \textbf{t\_index (ms/dok)} \\
+    \hline
+    1     & 56      & 14,6 & 30,97 \\
+    \hline
+    10    & 590     & 16,5 &  3,02 \\
+    \hline
+    50    & 2.499   & 26,0 &  0,77 \\
+    \hline
+    100   & 4.582   & 28,7 &  0,39 \\
+    \hline
+    250   & 8.788   & 28,2 &  0,27 \\
+    \hline
+    \textbf{500}   & \textbf{14.132}  & \textbf{31,5} &  \textbf{0,16} \\
+    \hline
+    1000  & 15.378  & 63,7 &  0,26 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+Dari Tabel~\ref{tab:capacity-benchmark} terlihat bahwa \emph{throughput} meningkat nyata hingga
+\emph{batch}~=~\kneepoint, dengan CPU~\kneeCpu\%.
+Setelah titik ini, kenaikan \emph{throughput} hanya 9\% (dari 14.132 ke 15.378~msg/s) namun CPU
+melonjak dua kali lipat (dari 32\% ke 64\%).
+Titik ini disebut \emph{knee point} dan menjadi batas atas yang efektif untuk operasi yang efisien.
+
+\subsection{Penentuan Rentang \emph{Batch Size}}
+\label{sec:batch-range}
+
+Rentang \emph{batch size} diturunkan dari dua batasan fisik menggunakan Bryson's rule:
+
+\begin{enumerate}
+\item \textbf{Batasan memori:}
+$\text{batch\_max}_{\text{mem}} = \lfloor J \times \alpha / d \rfloor$,
+dengan $J = 512$~MB (\emph{heap}), $\alpha = 0{,}10$ (fraksi heap untuk \emph{bulk buffer}),
+dan $d = \text{\docsizeKB}$~KB (ukuran dokumen terukur).
+Hasilnya: $\text{batch\_max}_{\text{mem}} = 113.197$.
+
+\item \textbf{Batasan CPU:}
+$\text{batch\_max}_{\text{cpu}} = C_{\text{limit}} \times 1000 / t_{\text{index}}$,
+dengan $C_{\text{limit}} = 1{,}0$~core dan $t_{\text{index}} = 0{,}393$~ms/dok (median terukur).
+Hasilnya: $\text{batch\_max}_{\text{cpu}} = 2.545$.
+
+\item \textbf{Batasan efektif:}
+$\text{batch\_max} = \min(113.197,\; 2.545) \times 0{,}80 = \batchmaxCap$.
+Faktor keamanan 0,80 menyisakan \emph{headroom} untuk \emph{garbage collection} dan \emph{merge}.
+
+\item \textbf{Batas bawah:}
+$\text{batch\_min} = \lceil t_{\text{overhead}} / t_{\text{index}} \rceil = \lceil 8/0{,}39 \rceil = \batchminCap$,
+yakni titik di mana \emph{overhead} koneksi melebihi manfaat pemrosesan \emph{batch}.
+\end{enumerate}
+
+Rentang \emph{batch size} yang terjustifikasi adalah $[\batchminCap,\; \batchmaxCap]$.
+
+\subsection{Penentuan Rentang \emph{Poll Interval}}
+\label{sec:poll-range}
+
+Rentang \emph{poll interval} ditentukan dari dua arah.
+
+\begin{enumerate}
+\item \textbf{Batas bawah (floor):}
+$\text{poll\_min} = t_{\text{fetch}} + \text{batch\_mid} \times t_{\text{index}} + t_{\text{overhead}}$,
+dengan $t_{\text{fetch}} = \text{\tfetchms}$~ms (waktu \emph{round-trip} Kafka yang terukur),
+$\text{batch\_mid} = (\batchmaxCap + \batchminCap)/2 \approx 1019$, dan $t_{\text{index}} = 0{,}393$~ms.
+Hasilnya: $\text{poll\_min} = 203 + 1019 \times 0{,}393 + 8 \approx \pollminCap$~ms.
+Di bawah nilai ini, \emph{poll} selesai sebelum data dari Kafka siap, sehingga hanya membuang sumber daya.
+
+\item \textbf{Batas atas (ceiling):}
+$\text{poll\_max} = L_{\text{SLA}} - \text{batch\_mid} \times t_{\text{index}}$,
+dengan $L_{\text{SLA}} = 2000$~ms (latensi end-to-end yang dapat diterima).
+Hasilnya: $\text{poll\_max} = 2000 - 401 \approx \pollmaxCap$~ms.
+Di atas nilai ini, latensi sinkronisasi melebihi batas yang dapat diterima.
+\end{enumerate}
+
+Rentang \emph{poll interval} yang terjustifikasi adalah $[\pollminCap,\; \pollmaxCap]$~ms.
+
+\subsection{Penetapan Titik Operasional Nominal ($u_{\text{nom}}$)}
+
+Titik nominal $u_{\text{nom}} = [\text{batch\_nom},\; \text{inv\_poll\_nom}]$ dipilih sebagai
+titik keseimbangan yang memberikan kapasitas cukup tanpa mendekati batas saturasi CPU.
+
+\begin{itemize}
+\item \textbf{batch\_nom = 250.}
+Dari hasil \emph{benchmark}, \emph{batch}~=~250 menghasilkan \emph{throughput} 8.788~msg/s dengan
+CPU 28\%, yakni di bawah \emph{knee point} (batch~=~\kneepoint, CPU~=~\kneeCpu\%).
+Titik ini memiliki ruang untuk naik menuju \emph{knee point} jika antrean menumpuk,
+sekaligus ruang untuk turun jika sumber daya tertekan.
+
+\item \textbf{inv\_poll\_nom = 5{,}0 (poll = 200~ms).}
+\emph{Poll interval} 200~ms mendekati $t_{\text{fetch}} = \text{\tfetchms}$~ms.
+Pada \emph{poll} $\geq t_{\text{fetch}}$, setiap siklus \emph{poll} memiliki peluang tinggi menemukan
+data baru (efisiensi \emph{polling} $= \min(1,\; t_{\text{fetch}} / \text{poll}) = 1{,}0$).
+\emph{Poll} lebih cepat dari $t_{\text{fetch}}$ hanya akan membuang siklus CPU.
+\end{itemize}
 
 \section{Eksperimen Open-Loop dan Identifikasi Sistem}
 
-Sebelum merancang kontroler, perlu diketahui terlebih dahulu bagaimana sistem merespons perubahan parameter.
-Untuk itu dilakukan eksperimen open-loop, di mana parameter sinkronisasi divariasikan tanpa kontroler aktif dan respons sistem dicatat.
-Data dari eksperimen ini kemudian digunakan untuk mengestimasi model state-space.
-
 \subsection{Prosedur Eksperimen}
 
-Eksperimen open-loop dilakukan pada tanggal \openloopdate{}.
-Sistem sinkronisasi dijalankan tanpa kontroler aktif, dan parameter batch size serta poll interval divariasikan secara sistematis.
-Variabel state dicatat setiap \openloopinterval{} detik, menghasilkan total \openloopsamples{} data point.
+Eksperimen \emph{open-loop} dilakukan pada~\openloopdate{} menggunakan grid 10$\times$10 dengan
+spasi logaritmik dalam rentang yang telah ditetapkan.
+Nilai \emph{batch size} yang diuji adalah \{3, 6, 13, 26, 54, 112, 232, 478, 987, 2036\} dan
+\emph{poll interval} \{604, 673, 750, 836, 931, 1037, 1156, 1288, 1435, 1599\}~ms.
+Spasi logaritmik dipilih karena respons sistem (terutama \emph{throughput}) bersifat diminishing
+returns terhadap \emph{batch size}.
 
-Variabel state yang diukur adalah jumlah antrian pesan (\emph{queue length}), utilisasi CPU, utilisasi memori, operasi I/O tulis, dan rata-rata latensi.
-Variabel kontrol yang divariasikan adalah batch size dan poll interval.
+Setiap kombinasi kontrol diaplikasikan selama 60 detik setelah pra-pengisian antrean,
+kemudian diikuti periode \emph{settling} 10 detik.
+Total menghasilkan \openloopsamples{} sampel dari \openloopsteps{} langkah.
 
-\subsection{Hasil Identifikasi Sistem}
+Variabel state yang dicatat adalah panjang antrean (\emph{queue\_length}),
+utilisasi CPU, utilisasi memori, dan operasi I/O tulis.
+Latensi dicatat sebagai variabel observasi saja dan tidak dimasukkan ke dalam vektor state,
+karena pengujian sebelumnya menunjukkan bahwa latency di vektor state menyebabkan LQR menekan
+\emph{batch size} secara berlebihan (\emph{batch collapse}).
 
-Dari data tersebut, model state-space $x_{k+1} = Ax_k + Bu_k$ diestimasi menggunakan regresi linier.
-Matriks A berukuran 5$\times$5 dan matriks B berukuran 5$\times$2.
+Variabel kontrol yang divariasikan adalah \emph{batch size} dan \emph{inv\_poll\_interval}
+($= 1000 / \text{poll\_ms}$).
+Penggunaan \emph{inv\_poll\_interval} sebagai variabel kontrol (bukan \emph{poll\_interval})
+mempertahankan hubungan yang lebih linier antara variabel ini dan \emph{throughput},
+karena \emph{throughput} proporsional dengan frekuensi \emph{polling}, bukan intervalnya.
 
-Kualitas model diukur menggunakan koefisien determinasi ($R^2$) untuk setiap variabel state (Tabel~\ref{tab:sysid-fit}).
+\subsection{Kualitas Model Identifikasi}
+
+Model state-space $\mathbf{x}_{k+1} = A\mathbf{x}_k + B\mathbf{u}_k$ diestimasi menggunakan
+regresi kuadrat terkecil (\emph{least squares}).
+Kualitas fit diukur menggunakan $R^2$ per variabel state.
 
 \begin{table}[H]
     \centering
@@ -85,411 +232,447 @@ Kualitas model diukur menggunakan koefisien determinasi ($R^2$) untuk setiap var
     \hline
     \textbf{Variabel State} & \textbf{$R^2$} & \textbf{Interpretasi} \\
     \hline
-    Queue length & \rsqQueue & Sangat baik \\
+    Queue length & 0,997 & Sangat baik (mendekati integrator sempurna) \\
     \hline
-    Rata-rata latensi & \rsqLatency & Baik \\
+    Utilisasi CPU & 0,864 & Baik \\
     \hline
-    Utilisasi CPU & \rsqCpu & Cukup \\
+    Operasi I/O & 0,693 & Cukup \\
     \hline
-    Operasi I/O tulis & \rsqIo & Rendah \\
-    \hline
-    Utilisasi memori & \rsqMem & Rendah \\
+    Utilisasi memori & 0,056 & Rendah (dikontrol JVM GC, bukan parameter sink) \\
     \hline
     \end{tabular}
 \end{table}
 
-Queue length dan latensi memiliki $R^2$ tinggi, artinya kedua variabel ini dapat diprediksi dengan baik oleh model linier.
-Utilisasi CPU cukup, sedangkan memori dan I/O rendah.
-$R^2$ yang rendah pada memori dan I/O kemungkinan disebabkan oleh faktor non-linear seperti garbage collection dan caching yang sulit ditangkap model linier.
+$R^2$ memori yang rendah konsisten dengan fakta bahwa heap JVM dikelola secara internal dan
+hampir tidak terpengaruh oleh \emph{batch size} atau \emph{poll interval}.
+Meski demikian, variabel ini tetap dipertahankan dalam vektor state agar model mencakup
+dinamika sistem secara lengkap.
 
-Meski demikian, variabel utama yang menjadi fokus pengendalian, yaitu queue length dan latensi, memiliki model yang cukup akurat untuk digunakan sebagai dasar perancangan kontroler LQR.
+\subsection{Koreksi Matriks B dari Data Kapasitas}
 
-Gambar~\ref{fig:openloop-correlation} menunjukkan korelasi antar variabel kontrol dan state.
-Batch size memiliki korelasi negatif kuat dengan perubahan queue length ($r = -0{,}63$), yang mengonfirmasi bahwa batch yang lebih besar membantu mengurangi backlog.
-Poll interval juga berkorelasi positif dengan queue length ($r = 0{,}51$) karena interval yang lebih panjang memperlambat konsumsi pesan.
+Matriks B yang diperoleh dari eksperimen \emph{open-loop} dengan eksitasi acak menunjukkan masalah
+pada baris \emph{queue}: $B[\text{queue}, \text{batch}]$ bernilai positif pada estimasi awal,
+yang secara fisik tidak masuk akal (batch besar seharusnya menguras antrean, bukan memperbesarnya).
+Penyebabnya adalah \emph{confounding}: \emph{batch size} berkorelasi dengan besarnya pra-pengisian
+antrean dalam prosedur eksperimen, sehingga regresi linier menangkap hubungan yang tidak kausal.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.75\textwidth]{IV_1__correlation_matrix.png}
-    \caption{Korelasi antar variabel kontrol dan state pada eksperimen open-loop}
-    \label{fig:openloop-correlation}
-\end{figure}
+Untuk mengatasi hal ini, baris $B[\text{queue}, :]$ dikoreksi menggunakan data \emph{capacity benchmark}:
 
-Gambar~\ref{fig:openloop-scatter} memperlihatkan hubungan antara setiap variabel kontrol dan setiap variabel state secara individual, dilengkapi garis regresi linier dan nilai korelasi.
+\begin{equation}
+B[\text{queue}, \text{batch}] = -\frac{(\text{tput}(\mu_b + \sigma_b) - \text{tput}(\mu_b)) \cdot \Delta t}{\sigma_q}
+\end{equation}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{IV_2__scatter_control_vs_state.png}
-    \caption{Scatter plot variabel kontrol terhadap variabel state}
-    \label{fig:openloop-scatter}
-\end{figure}
+\begin{equation}
+B[\text{queue}, \text{inv\_poll}] = -\frac{\text{tput}(\mu_b) \cdot (\text{eff}(\mu_p + \sigma_p) - \text{eff}(\mu_p)) \cdot \Delta t}{\sigma_q}
+\end{equation}
 
-Gambar~\ref{fig:openloop-timeseries} menampilkan perubahan seluruh variabel terhadap waktu selama eksperimen open-loop.
+dengan $\text{tput}(\cdot)$ adalah fungsi \emph{throughput} yang diinterpolasi dari data benchmark,
+$\text{eff}(\cdot) = \min(1,\; t_{\text{fetch}} / \text{poll\_ms})$ adalah efisiensi \emph{polling},
+$\mu_b = 130$, $\sigma_b = 75$ adalah mean dan standar deviasi \emph{batch} dari sysid,
+$\mu_p = 5{,}0$, $\sigma_p = 3{,}0$ adalah mean dan standar deviasi \emph{inv\_poll},
+$\sigma_q = 10.000$ adalah standar deviasi \emph{queue}, dan $\Delta t = 1$~detik.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{IV_3__timeseries_openloop.png}
-    \caption{Time series variabel state dan kontrol selama eksperimen open-loop}
-    \label{fig:openloop-timeseries}
-\end{figure}
+Nilai yang dihasilkan adalah $B[\text{queue}, \text{batch}] = -0{,}21$ dan
+$B[\text{queue}, \text{inv\_poll}] \approx 0$ (karena pada titik nominal \emph{poll} $\approx t_{\text{fetch}}$,
+efisiensi sudah jenuh pada 1,0 sehingga penambahan \emph{inv\_poll} tidak meningkatkan \emph{throughput}).
 
-\section{Perancangan Kontroler}
+Implikasi dari $B[\text{queue}, \text{inv\_poll}] \approx 0$ bagi DARE adalah bahwa kanal
+\emph{inv\_poll} tidak berkontribusi pada drainase antrean, sehingga seluruh upaya koreksi
+antrean dialokasikan ke kanal \emph{batch size}.
+Ini menghasilkan gain $K$ yang lebih agresif pada \emph{batch}, sesuai dengan perilaku yang diinginkan.
 
-Berdasarkan model yang diperoleh, beberapa strategi pengendalian dirancang dan diuji.
-Selain LQR, tiga baseline dan empat varian ANN juga digunakan sebagai pembanding.
+\section{Rancangan Matriks Biaya LQR}
 
-\subsection{Konfigurasi LQR}
+\subsection{Matriks R (Penalti Usaha Kontrol)}
 
-Sebagaimana dibahas pada Bab II, matriks Q pada LQR menentukan seberapa besar penalti yang diberikan ketika masing-masing variabel state menyimpang dari kondisi yang diinginkan.
-Matriks Q berbentuk diagonal, di mana setiap elemen diagonal berkorespondensi dengan satu variabel state sesuai urutan vektor state $\mathbf{x} = [queue\_length, cpu, mem, io, latency]^T$.
-Semakin besar nilai elemen diagonal untuk suatu variabel, semakin keras sistem berusaha menekan deviasi variabel tersebut, bahkan jika itu berarti variabel lain harus dikorbankan.
+Matriks $R$ dirancang menggunakan \emph{Bryson's rule} berbasis rentang operasional:
 
-Empat varian Q dirancang untuk menguji skenario prioritas yang berbeda (Tabel~\ref{tab:lqr-variants}).
-Matriks R dijaga sama untuk seluruh varian agar perbedaan perilaku berasal dari Q saja.
+\begin{equation}
+R_{ii} = \frac{R_{\text{base}}}{(\Delta u_{i,\max,\text{norm}})^2}
+\end{equation}
+
+dengan $\Delta u_{i,\max} = \max(u_{i,\max} - u_{i,\text{nom}},\; u_{i,\text{nom}} - u_{i,\min})$
+adalah maksimum simpangan dari nominal, dan $\Delta u_{i,\max,\text{norm}} = \Delta u_{i,\max} / \sigma_{u_i}$
+adalah simpangan tersebut dalam satuan normalisasi.
+
+Dengan rentang dari \emph{capacity benchmark}:
+$\Delta u_{\text{batch},\max} = \max(2036 - 250,\; 250 - 3) = 1786$ dan
+$\Delta u_{\text{inv\_poll},\max} = \max(10 - 5,\; 5 - 0{,}625) = 5$,
+serta $\sigma_{\text{batch}} = 75$ dan $\sigma_{\text{inv\_poll}} = 3$,
+diperoleh:
+
+\begin{equation}
+R = R_{\text{base}} \cdot \text{diag}\!\left(\frac{1}{(1786/75)^2},\; \frac{1}{(5/3)^2}\right)
+= 1{,}0 \cdot \text{diag}(1{,}76 \times 10^{-3},\; 0{,}36)
+\end{equation}
+
+Nilai $R[\text{batch}] \ll R[\text{inv\_poll}]$ mencerminkan fakta bahwa rentang operasional
+\emph{batch size} ($\sim 2000$) jauh lebih besar daripada rentang \emph{inv\_poll} ($\sim 5$),
+sehingga perubahan \emph{batch} ``lebih murah'' secara proporsional dan DARE dapat menggunakannya
+lebih leluasa.
+
+\subsection{Matriks Q (Penalti Deviasi State)}
+
+Tiga preset matriks Q dirancang untuk skenario prioritas yang berbeda.
+Latensi tidak dimasukkan sebagai state (hanya sebagai variabel observasi), sehingga vektor state
+adalah $\mathbf{x} = [\text{queue, cpu, mem, io}]^T$.
 
 \begin{table}[H]
     \centering
-    \caption{Varian pembobotan LQR}
-    \label{tab:lqr-variants}
+    \caption{Preset matriks $Q$ dan motivasi perancangan}
+    \label{tab:lqr-q-presets}
     \renewcommand{\arraystretch}{1.4}
-    \begin{tabular}{|c|l|l|}
+    \begin{tabular}{|c|l|p{5cm}|}
     \hline
-    \textbf{Varian} & \textbf{Prioritas} & \textbf{Diagonal Q} \\
+    \textbf{Preset} & \textbf{Diagonal Q} & \textbf{Motivasi} \\
     \hline
-    Q1 & Prioritas backlog & diag(10, 1, 1, 1, 1) \\
+    Q1 & diag(100, 1, 0,1, 1) & Prioritas backlog. Queue dibobot 100$\times$ lebih besar dari cpu/io, sehingga kontroler sangat agresif mengurangi antrean. \\
     \hline
-    Q2 & Prioritas utilisasi sumber daya & diag(1, 10, 10, 10, 1) \\
+    Q2 & diag(10, 10, 0,1, 10) & Prioritas sumber daya. Queue dan resource (cpu, io) dibobot sama besar, mencerminkan keseimbangan antara kecepatan sinkronisasi dan efisiensi. \\
     \hline
-    Q3 & Prioritas latensi & diag(1, 1, 1, 1, 10) \\
-    \hline
-    Q4 & Seimbang & diag(1, 1, 1, 1, 1) \\
+    Q4 & diag(100, 10, 0,1, 10) & Seimbang agresif. Queue mendapat bobot tertinggi sekaligus resource diperhatikan, cocok untuk sistem yang membutuhkan kecepatan tinggi tanpa mengabaikan efisiensi. \\
     \hline
     \end{tabular}
 \end{table}
 
-Pada Q1, elemen pertama (queue length) diberi bobot 10 sedangkan sisanya 1.
-Artinya, deviasi backlog dianggap 10 kali lebih ``mahal'' dibanding deviasi CPU, memori, I/O, atau latensi.
-Kontroler akan berusaha menurunkan backlog lebih dulu, meskipun utilisasi sumber daya menjadi kurang efisien.
+Bobot memori (0,1) dipilih kecil karena memori dikelola oleh \emph{garbage collector} JVM dan
+hampir tidak dipengaruhi secara langsung oleh \emph{batch size} atau \emph{poll interval}.
+Memasukkan bobot besar pada memori hanya akan menambah noise pada sinyal kontrol.
 
-Pada Q2, bobot 10 diberikan pada tiga variabel sumber daya sekaligus (CPU, memori, I/O).
-Kontroler akan menjaga agar utilisasi sumber daya tetap rendah, meskipun backlog bertambah.
-Varian ini merepresentasikan skenario di mana kapasitas server terbatas dan overload harus dihindari.
+\subsection{State Target dan Titik Nominal Kontrol}
 
-Pada Q3, bobot 10 diberikan pada latensi saja.
-Kontroler akan memprioritaskan penurunan waktu tunggu sinkronisasi, yang secara tidak langsung juga menekan backlog karena pemrosesan dipercepat.
+State target $\mathbf{x}^*$ dipilih sebagai berikut:
 
-Pada Q4, seluruh elemen diagonal bernilai 1 sehingga tidak ada variabel yang diprioritaskan.
-Varian ini menjadi baseline untuk melihat perilaku LQR tanpa preferensi tertentu.
+\begin{table}[H]
+    \centering
+    \caption{State target dan justifikasi pemilihan}
+    \label{tab:state-target}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|r|l|}
+    \hline
+    \textbf{Variabel} & \textbf{Target} & \textbf{Justifikasi} \\
+    \hline
+    queue\_length & 0 & Kondisi ideal: tidak ada antrean tertunda \\
+    \hline
+    cpu\_util & 5\% & Mendekati \emph{baseline} CPU saat idle (\emph{one-sided}: hanya dihukum jika $>5\%$) \\
+    \hline
+    mem\_util & 50\% & Nilai tengah rentang operasional; \emph{one-sided} \\
+    \hline
+    io\_write\_ops & 30 ops/s & Nilai median dari data historis; \emph{one-sided} \\
+    \hline
+    \end{tabular}
+\end{table}
 
-\subsection{Konfigurasi Baseline}
+Penalti \emph{one-sided} pada cpu, mem, dan io berarti variabel ini hanya dihukum jika nilainya
+melebihi target (bukan juga ketika lebih rendah).
+Hal ini mencerminkan realitas bahwa CPU rendah bukan masalah, melainkan CPU tinggi yang perlu dihindari.
 
-Tiga strategi baseline digunakan sebagai pembanding.
+\subsection{Normalisasi untuk Ruang Kerja LQR}
+\label{sec:lqr-norm}
 
-\begin{enumerate}
-\item \textbf{Statik.} Batch size tetap \staticbatch{} dan poll interval tetap \staticpoll{} ms. Tidak ada penyesuaian parameter.
+Saat eksperimen \emph{open-loop} dijalankan dengan antrean besar (0--200.000), standar deviasi
+$\sigma_q = 10.000$ mencerminkan rentang yang sangat lebar.
+Namun dalam operasi \emph{closed-loop} aktual, antrean hanya bergerak dalam kisaran 0--7.000
+(persentil ke-95 = 7.049).
 
-\item \textbf{Rule-based.} Parameter disesuaikan berdasarkan dua aturan sederhana.
-Jika queue length melebihi 5000, batch size dinaikkan 50.
-Jika utilisasi CPU melebihi 80\%, batch size diturunkan 50.
-Poll interval dijaga tetap.
+Jika normalisasi sysid digunakan apa adanya, maka kesalahan state $\Delta q = 5.000$ dalam ruang
+normalisasi hanya bernilai $5.000/10.000 = 0{,}5$, sehingga aksi kontrol yang dihasilkan DARE
+jauh lebih kecil dari yang dibutuhkan.
+Akibatnya, LQR terlihat tidak responsif meskipun gain $K$-nya besar.
 
-\item \textbf{PID.} Kontroler PID mengatur batch size berdasarkan selisih queue length terhadap target nol.
-Parameter yang digunakan adalah $K_p = 0{,}1$, $K_i = 0{,}01$, $K_d = 0{,}05$ dengan poll interval tetap pada 1000 ms.
-PID hanya mengontrol satu variabel (batch size) berdasarkan satu sinyal error (queue length).
-\end{enumerate}
+Untuk mengatasi hal ini, normalisasi LQR di-\emph{override} ke rentang operasional
+\emph{closed-loop} yang aktual:
 
-\subsection{Konfigurasi ANN}
+\begin{table}[H]
+    \centering
+    \caption{Normalisasi LQR (di-\emph{override} dari sysid ke rentang \emph{closed-loop})}
+    \label{tab:lqr-norm}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|r|r|l|}
+    \hline
+    \textbf{Variabel} & \textbf{Mean} & \textbf{Std} & \textbf{Justifikasi std} \\
+    \hline
+    queue\_length & \normQueueMean & \normQueueStd & $\text{p95}_{cl} / 1{,}645 \approx 4286$ dibulatkan ke 5000 \\
+    \hline
+    cpu\_util & 5,0 & 25,0 & $\text{p95}_{cl}(=50\%) / 2 = 25$ (mencakup 5--55\%) \\
+    \hline
+    mem\_util & 50,0 & 20,0 & Sama dengan sysid (p5--p95 $\approx$ 21--73\%) \\
+    \hline
+    io\_write\_ops & 30,0 & 40,0 & $\text{p95}_{cl}(=99) / 2{,}5 = 40$ (mencakup 0--100) \\
+    \hline
+    batch\_size & \normBatchMean & \normBatchStd & $\text{max\_useful}/4 = 2036/4 \approx 509$ dibulatkan ke 250 \\
+    \hline
+    inv\_poll\_interval & \normInvPollMean & \normInvPollStd & Std aktual CL = 1,7; dibulatkan ke 2,0 \\
+    \hline
+    \end{tabular}
+\end{table}
 
-Empat varian kontroler berbasis Artificial Neural Network (ANN) juga diuji.
-Masing-masing varian (ann\_q1 sampai ann\_q4) dilatih dengan fungsi biaya yang sesuai dengan varian Q pada LQR, sehingga perbandingan antara LQR dan ANN dilakukan secara adil.
+Dengan normalisasi ini, kesalahan antrean 5.000 dalam ruang normalisasi bernilai
+$5.000 / 5.000 = 1{,}0$ (satu standar deviasi), menghasilkan aksi koreksi \emph{batch} yang
+proporsional dengan kebutuhan aktual.
 
-% TODO: tambahkan arsitektur ANN (jumlah layer, neuron, aktivasi) jika diperlukan
+\section{Rancangan Kontroler ANN Berbasis MLE}
+
+\subsection{Motivasi: Menghindari Plafon LQR}
+
+Kontroler ANN yang dilatih menggunakan LQR sebagai orakel (\emph{imitation learning}) akan
+terbatas pada kualitas LQR itu sendiri.
+Jika LQR memiliki asumsi linearitas yang tidak terpenuhi, ANN yang meniru LQR juga akan mewarisi
+kelemahan tersebut.
+
+Pendekatan alternatif yang dipilih adalah \emph{Maximum Likelihood Estimation} (MLE) berbasis
+\emph{Boltzmann distribution}, di mana ANN dilatih untuk menghasilkan nilai ekspektasi dari
+kebijakan Boltzmann tanpa melibatkan LQR sama sekali.
+
+\subsection{Model \emph{Throughput} dari Data Kapasitas}
+
+Untuk mengevaluasi biaya setiap tindakan kontrol dalam ruang fisik (bukan ruang model sysid yang
+tidak reliabel untuk kanal antrean), dibangun model \emph{throughput} empiris dari data
+\emph{capacity benchmark}:
+
+\begin{equation}
+\text{tput}(\text{batch}, \text{poll}) = \text{tput\_max}(\text{batch}) \times \min\!\left(1,\; \frac{t_{\text{fetch}}}{\text{poll}}\right)
+\end{equation}
+
+Suku pertama, $\text{tput\_max}(\text{batch})$, diinterpolasi secara linier dari data
+Tabel~\ref{tab:capacity-benchmark}.
+Suku kedua, $\min(1,\; t_{\text{fetch}} / \text{poll})$, adalah efisiensi \emph{polling}:
+jika \emph{poll} $< t_{\text{fetch}}$, setiap siklus selesai sebelum data tersedia
+sehingga sebagian kapasitas terbuang.
+Jika \emph{poll} $\geq t_{\text{fetch}}$, setiap siklus menemukan data dengan peluang tinggi
+sehingga efisiensi = 1,0.
+
+Dengan model ini, prediksi \emph{one-step forward} dilakukan sebagai:
+
+\begin{align}
+q_{k+1} &= \max\!\left(0,\; q_k - \text{tput}(\text{batch}, \text{poll}) \cdot \Delta t\right) \\
+\text{cpu}_{k+1} &= \text{cpu\_at\_benchmark}(\text{batch})
+\end{align}
+
+Fungsi $\text{cpu\_at\_benchmark}(\cdot)$ diinterpolasi dari kolom CPU pada
+Tabel~\ref{tab:capacity-benchmark}.
+Variabel memori dan I/O dianggap konstan (uncontrolled) dalam prediksi satu langkah.
+
+\subsection{Kebijakan Boltzmann dan Label Pelatihan}
+
+Untuk setiap pasangan (state, Q), fungsi biaya $J$ dievaluasi pada seluruh grid tindakan
+$\mathcal{U}$ berukuran $15 \times 15 = 225$ titik (15 level \emph{batch} dan 15 level \emph{inv\_poll},
+spasi logaritmik dalam rentang dari \emph{capacity benchmark}):
+
+\begin{equation}
+J(\mathbf{x}, \mathbf{u}, Q) = (\mathbf{x}_{k+1} - \mathbf{x}^*)^\top Q (\mathbf{x}_{k+1} - \mathbf{x}^*) + (\mathbf{u} - \mathbf{u}_{\text{nom}})^\top R (\mathbf{u} - \mathbf{u}_{\text{nom}})
+\end{equation}
+
+Label target $\mathbf{u}^*$ kemudian dihitung sebagai nilai ekspektasi dari distribusi Boltzmann:
+
+\begin{equation}
+\mathbf{u}^*(\mathbf{x}, Q) = \sum_{\mathbf{u} \in \mathcal{U}} P(\mathbf{u} \mid \mathbf{x}, Q) \cdot \mathbf{u},
+\quad P(\mathbf{u} \mid \mathbf{x}, Q) = \text{softmax}\!\left(\frac{-J(\mathbf{x}, \mathbf{u}, Q)}{T \cdot \Delta J}\right)
+\end{equation}
+
+dengan $T = 0{,}1$ (parameter selektivitas) dan $\Delta J = \max J - \min J$ (normalisasi rentang
+biaya agar $T$ tidak bergantung pada skala absolut $J$).
+
+Nilai ekspektasi Boltzmann memiliki beberapa keunggulan dibanding \emph{argmin} biasa:
+\begin{itemize}
+\item Menghasilkan aksi yang halus karena merupakan rata-rata berbobot, bukan pilihan ekstrem.
+\item Memperhitungkan ketidakpastian di sekitar optimum lokal.
+\item Konsisten dengan prinsip \emph{maximum entropy} pada area dengan biaya serupa.
+\end{itemize}
+
+\subsection{Arsitektur dan Pelatihan ANN}
+
+ANN dilatih sebagai fungsi $\hat{\mathbf{u}} = f([\log_{10}(\text{diag}(Q) + 10^{-3}),\; \mathbf{x}_{\text{norm}}])$,
+dengan dimensi input 8 (4 diagonal Q + 4 variabel state).
+Bobot Q dimasukkan sebagai log-transformasi untuk mengkompres rentang yang sangat lebar
+(dari 0,1 hingga 1000).
+
+Arsitektur jaringan: $8 \to 128 \to 128 \to 2$ dengan aktivasi ReLU pada lapisan tersembunyi
+dan keluaran linier.
+Pelatihan menggunakan MSE loss biasa (tidak berbobot), karena label $\mathbf{u}^*$ sudah
+mengandung informasi optimal melalui ekspektasi Boltzmann.
+Optimiser Adam, $\text{lr} = 10^{-3}$, 300 epoch, dengan split validasi 10\%.
+
+Satu model yang sama melayani seluruh preset Q (Q1, Q2, Q4) serta 20 Q acak yang digunakan
+selama pelatihan untuk memperkuat generalisasi.
+Pada saat inferensi, Q dimasukkan sesuai konfigurasi yang dipilih, sehingga satu bobot jaringan
+menghasilkan kebijakan yang berbeda untuk setiap Q.
+
+Data pelatihan berjumlah 12.627 pasang state--label, yang terdiri dari 122 langkah
+\emph{open-loop} dikali 23 preset Q (3 tetap + 20 acak), ditambah augmentasi 427 sampel pada
+state \emph{high-queue} (persentil ke-50 ke atas) untuk memperbaiki cakupan di area yang paling
+relevan.
 
 \section{Hasil Eksperimen Closed-Loop}
 
-Eksperimen closed-loop dilakukan pada tanggal \closedloopdate{} dengan total \closedloopsamples{} sampel.
-Setiap kombinasi kontroler dan pola beban dijalankan selama maksimal \closedloopduration{} detik.
-Empat pola beban diuji sesuai rancangan pada Bab III, dengan konfigurasi beban sebagai berikut.
+Eksperimen \emph{closed-loop} dilakukan pada~\closedloopdate{}, menghasilkan total~\closedloopsamples{}
+sampel dari 45 percobaan (9 kontroler $\times$ 5 pola beban $\times$ 1 pengulangan).
+Kontroler yang diuji adalah: Statik, Rule-Based, State-Feedback (penempatan kutub), LQR-Q1,
+LQR-Q2, LQR-Q4, ANN-Q1, ANN-Q2, dan ANN-Q4.
+
+\subsection{Metrik Evaluasi: Fungsi Biaya $J$}
+
+Perbandingan utama menggunakan fungsi biaya $J$ yang dihitung secara \emph{post-hoc} pada
+setiap sampel dalam jendela waktu yang ditetapkan:
+
+\begin{equation}
+J = \frac{1}{T} \sum_{k=1}^{T} \left[(\mathbf{x}_k - \mathbf{x}^*)^\top Q (\mathbf{x}_k - \mathbf{x}^*) + (\mathbf{u}_k - \mathbf{u}_{\text{nom}})^\top R (\mathbf{u}_k - \mathbf{u}_{\text{nom}})\right]
+\end{equation}
+
+Nilai $J$ yang lebih rendah berarti kontroler lebih dekat ke kondisi yang diinginkan.
+\emph{Regret} ternormalisasi dihitung sebagai
+$r = (J_{\text{controller}} - J_{\text{static}}) / J_{\text{static}}$,
+sehingga $r = 0$ berarti setara dengan statik dan $r < 0$ berarti lebih baik dari statik.
+
+\subsection{Perbandingan Fungsi Biaya}
 
 \begin{table}[H]
     \centering
-    \caption{Konfigurasi skenario beban}
-    \label{tab:load-config}
+    \caption{Nilai rata-rata fungsi biaya $J$ per kontroler dan preset Q}
+    \label{tab:cost-J}
     \renewcommand{\arraystretch}{1.4}
-    \begin{tabular}{|l|l|}
+    \begin{tabular}{|l|r|r|r|}
     \hline
-    \textbf{Skenario} & \textbf{Konfigurasi} \\
+    \textbf{Kontroler} & \textbf{Q1 (Backlog)} & \textbf{Q2 (Resource)} & \textbf{Q4 (Balanced)} \\
     \hline
-    Step & Rate 1000 msg/s, durasi 30 detik \\
+    Statik & 460 & 2.194 & 2.424 \\
     \hline
-    Ramp & Peak rate 2000 msg/s, durasi 30 detik \\
+    Rule-Based & 588 & 1.727 & 2.075 \\
     \hline
-    Impulse & Rate 10000 msg/s, burst 1 detik \\
+    State-Feedback & 1.324 & 2.465 & 3.443 \\
     \hline
-    Periodic step & High 1500/low 500 msg/s, half-period 3 detik, durasi 30 detik \\
+    LQR & 764 & 1.678 & 3.661 \\
+    \hline
+    \textbf{ANN (MLE)} & \textbf{363} & \textbf{1.336} & \textbf{1.667} \\
     \hline
     \end{tabular}
 \end{table}
 
-\subsection{Skenario Beban Step}
+ANN (MLE) menghasilkan biaya terendah di seluruh preset Q.
+Pada Q1, ANN (363) lebih baik dari statik (460) sebesar 21\% dan dari LQR (764) sebesar 52\%.
+Pada Q4, perbedaan paling mencolok: ANN (1.667) vs LQR (3.661), yakni 54\% lebih baik.
 
-Beban step mensimulasikan lonjakan trafik mendadak dengan rate tetap 1000 msg/s selama 30 detik.
-Hasil perbandingan metrik utama ditunjukkan pada Tabel~\ref{tab:result-step}.
+\subsection{Analisis Skenario Beban Step}
+
+Skenario \emph{step} dengan rate 1.000 msg/s selama 30 detik adalah skenario paling representatif
+untuk membandingkan responsivitas kontroler.
 
 \begin{table}[H]
     \centering
-    \caption{Perbandingan metrik pada skenario beban step}
+    \caption{Perbandingan metrik pada skenario beban \emph{step}}
     \label{tab:result-step}
     \renewcommand{\arraystretch}{1.4}
-    \begin{tabular}{|l|r|r|r|r|r|r|r|}
+    \begin{tabular}{|l|r|r|r|r|}
     \hline
-    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
+    \textbf{Kontroler} & \textbf{Batch rata-rata} & \textbf{Queue@30s} & \textbf{Latensi (ms)} & \textbf{Drain} \\
     \hline
-    Backlog mean & 14157 & 14155 & 6403 & 14643 & 16809 & 10883 & 14607 \\
+    Statik & 250 & 748 & 1.211 & 11s \\
     \hline
-    Backlog max & 22750 & 23250 & 11096 & 24239 & 27240 & 18502 & 23866 \\
+    Rule-Based & 553 & 3.900 & 957 & 11s \\
     \hline
-    Throughput (msg/s) & 241,7 & 248,1 & 700,6 & 149,4 & 183,9 & 132,4 & 155,1 \\
+    State-Feedback & 151 & 8.258 & 6.678 & 13s \\
     \hline
-    CPU mean (\%) & 7,1 & 6,6 & 13,8 & 9,5 & 3,3 & 16,0 & 7,1 \\
+    LQR-Q1 & 456 & 5.849 & 3.290 & 11s \\
     \hline
-    Mem mean (\%) & 53,7 & 56,2 & 57,0 & 51,0 & 54,8 & 56,0 & 52,5 \\
+    \textbf{ANN-Q1} & \textbf{628} & \textbf{3.800} & \textbf{1.013} & \textbf{11s} \\
     \hline
-    Batch size mean & 250 & 250 & 751 & 151 & 192 & 136 & 158 \\
+    \textbf{ANN-Q2} & \textbf{840} & \textbf{2.500} & \textbf{1.025} & \textbf{11s} \\
     \hline
-    Poll mean (ms) & 1000 & 1000 & 1000 & 607 & 1911 & 297 & 591 \\
-    \hline
-    \end{tabular}
-\end{table}
-
-Gambar~\ref{fig:queue-vs-load} memperlihatkan pergerakan queue length terhadap waktu untuk setiap kontroler pada keempat skenario beban.
-Area abu-abu menunjukkan laju injeksi pesan.
-PID (kuning) paling cepat menurunkan backlog, sedangkan LQR (hijau) menurunkannya secara lebih bertahap.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{IV_4__queue_vs_load_Q1.png}
-    \caption[Queue length terhadap waktu pada berbagai skenario beban]{Queue length terhadap waktu pada berbagai skenario beban, dengan laju injeksi pesan (area abu-abu) sebagai referensi}
-    \label{fig:queue-vs-load}
-\end{figure}
-
-Distribusi queue length per kontroler ditunjukkan pada Gambar~\ref{fig:boxplot-queue}.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{IV_5__boxplot_queue_Q1.png}
-    \caption{Distribusi queue length per kontroler pada setiap skenario beban}
-    \label{fig:boxplot-queue}
-\end{figure}
-
-Pada skenario step, PID menghasilkan backlog terendah (6403) dengan throughput tertinggi (700,6 msg/s), namun dengan batch size rata-rata 751 dan utilisasi CPU 13,8\%.
-Dari varian LQR, Q3 (prioritas latensi) menunjukkan backlog terendah (10883) dengan poll interval terpendek (297 ms) dan CPU tertinggi (16,0\%).
-Q2 (prioritas resource) justru menghasilkan backlog tertinggi (16809) dengan CPU terendah (3,3\%), sesuai dengan prioritasnya yang mengutamakan penghematan sumber daya.
-Q4 (seimbang) dan Q1 (prioritas backlog) menghasilkan backlog serupa dengan statik, menunjukkan bahwa bobot Q yang dipilih belum cukup efektif pada skenario ini.
-
-\subsection{Skenario Beban Ramp}
-
-Beban ramp meningkat secara bertahap dari nol hingga peak rate 2000 msg/s selama 30 detik.
-
-\begin{table}[H]
-    \centering
-    \caption{Perbandingan metrik pada skenario beban ramp}
-    \label{tab:result-ramp}
-    \renewcommand{\arraystretch}{1.4}
-    \begin{tabular}{|l|r|r|r|r|r|r|r|}
-    \hline
-    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
-    \hline
-    Backlog mean & 10324 & 10339 & 6624 & 11281 & 13023 & 9355 & 11119 \\
-    \hline
-    Backlog max & 23166 & 22405 & 15156 & 24946 & 26871 & 21867 & 24847 \\
-    \hline
-    Throughput (msg/s) & 219,1 & 228,7 & 629,1 & 116,8 & 156,8 & 125,6 & 130,6 \\
-    \hline
-    CPU mean (\%) & 6,3 & 6,4 & 10,7 & 6,7 & 4,9 & 13,3 & 10,8 \\
-    \hline
-    Mem mean (\%) & 52,8 & 55,4 & 53,9 & 56,2 & 51,7 & 55,3 & 50,4 \\
-    \hline
-    Batch size mean & 242 & 250 & 665 & 140 & 170 & 126 & 144 \\
-    \hline
-    Poll mean (ms) & 960 & 1000 & 1000 & 671 & 1737 & 380 & 671 \\
+    \textbf{ANN-Q4} & \textbf{823} & \textbf{4.614} & \textbf{974} & \textbf{11s} \\
     \hline
     \end{tabular}
 \end{table}
 
-Pola yang terlihat pada ramp serupa dengan step.
-PID tetap unggul di backlog dan throughput, sedangkan Q3 kembali menjadi varian LQR dengan backlog terendah (9355), bahkan sedikit lebih rendah dari statik (10324).
-Ini menunjukkan bahwa pada beban yang meningkat bertahap, LQR-Q3 mulai menunjukkan keunggulan dibanding parameter statik.
+ANN menggunakan \emph{batch} yang lebih besar (628--840) dan seluruh variannya berhasil menguras
+antrean dalam 11 detik, sama dengan statik.
+LQR-Q1 menggunakan \emph{batch} 456 dan menghasilkan antrean yang lebih tinggi (5.849).
 
-\subsection{Skenario Beban Impulse}
+Perbedaan \emph{batch} rata-rata ini mencerminkan perbedaan mendasar cara kerja kedua pendekatan.
+LQR menghitung $\mathbf{u}_k = \mathbf{u}_{\text{nom}} - K (\mathbf{x}_k - \mathbf{x}^*)$
+secara reaktif terhadap state saat ini, dan karena penalti CPU aktif saat \emph{batch} besar
+(CPU meningkat), terjadi tarik-menarik yang menyebabkan LQR tidak mencapai \emph{batch} optimal.
+ANN, di sisi lain, telah mempelajari dari data \emph{capacity benchmark} bahwa
+\emph{batch}~=~600--900 adalah tindakan yang memiliki biaya keseluruhan terendah pada kondisi
+antrean sedang hingga tinggi.
 
-Beban impulse mensimulasikan lonjakan singkat 10000 msg/s selama 1 detik, diikuti kembali ke kondisi normal.
+\subsection{Analisis Konsistensi Output Kontroler}
 
-\begin{table}[H]
-    \centering
-    \caption{Perbandingan metrik pada skenario beban impulse}
-    \label{tab:result-impulse}
-    \renewcommand{\arraystretch}{1.4}
-    \begin{tabular}{|l|r|r|r|r|r|r|r|}
-    \hline
-    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
-    \hline
-    Backlog mean & 6604 & 6762 & 4092 & 7114 & 7951 & 6089 & 7322 \\
-    \hline
-    Backlog max & 10000 & 9000 & 9901 & 10000 & 10000 & 10000 & 10000 \\
-    \hline
-    Throughput (msg/s) & 233,1 & 255,1 & 572,6 & 137,4 & 132,8 & 112,8 & 124,5 \\
-    \hline
-    CPU mean (\%) & 5,6 & 5,9 & 7,4 & 8,0 & 3,2 & 12,0 & 6,2 \\
-    \hline
-    Mem mean (\%) & 53,0 & 53,0 & 41,2 & 55,3 & 36,9 & 58,4 & 46,9 \\
-    \hline
-    Batch size mean & 243 & 250 & 551 & 125 & 143 & 120 & 128 \\
-    \hline
-    Poll mean (ms) & 960 & 1000 & 1000 & 680 & 1796 & 367 & 678 \\
-    \hline
-    \end{tabular}
-\end{table}
+Perbedaan konsistensi antar kontroler tampak jelas pada timeseries \emph{batch size}.
 
-Pada impulse, seluruh kontroler mencapai backlog max sekitar 10000 karena lonjakan beban yang sangat tinggi (10000 msg/s).
-Yang membedakan adalah kecepatan pemulihan setelah lonjakan.
-LQR-Q3 menghasilkan backlog mean terendah di antara varian LQR (6089), mendekati statik (6604).
-Rule-based memiliki backlog max terendah (9000), menunjukkan bahwa aturan sederhana cukup efektif untuk gangguan singkat.
+\textbf{LQR} menunjukkan osilasi yang signifikan.
+Nilai \emph{batch} berfluktuasi antara batas minimum dan nilai tinggi dalam pola
+\emph{sawtooth}: naik tajam saat antrean meningkat, turun tajam saat CPU melonjak akibat \emph{batch}
+besar, lalu naik lagi.
+Pola ini terjadi karena $K$ dalam LQR adalah gain statis yang bereaksi terhadap state saat ini
+tanpa memori tentang pola dinamis jangka pendek.
+Korelasi antara antrean dan \emph{batch} pada LQR adalah 0,88, menunjukkan responsivitas yang
+tinggi tetapi dengan rentang aksi yang terbatas (rata-rata 349, maksimum 472 pada run sebelumnya).
 
-\subsection{Skenario Beban Periodic Step}
+\textbf{ANN (MLE)} menunjukkan tren yang lebih monoton: \emph{batch size} naik seiring
+pertumbuhan antrean dan turun ketika antrean mereda, tanpa osilasi ekstrem.
+Korelasi antrean--\emph{batch} pada ANN adalah 0,51, lebih rendah karena ANN tidak semata-mata
+reaktif terhadap satu sinyal melainkan mempertimbangkan kombinasi seluruh state sekaligus.
+Nilai \emph{batch} rata-rata ANN mencapai 628 (hampir dua kali LQR) dengan nilai maksimum 1.108.
 
-Beban periodic step bergantian antara 1500 dan 500 msg/s setiap 3 detik selama 30 detik.
+\textbf{Rule-Based} menunjukkan perilaku inkremental yang stabil namun lambat:
+\emph{batch} naik 50 setiap kali antrean melewati ambang batas, dan turun 50 setiap kali CPU
+melampaui 47\%.
+Ambang batas ini diturunkan dari \emph{capacity benchmark}:
+$\text{cpu\_high} = 1{,}5 \times \text{CPU\_knee} = 1{,}5 \times 31{,}5\% = 47{,}3\%$ dan
+$\text{backlog\_high} = 2{,}0 \times (2000 / 1000 \times 1250) = 5000$
+(SLA latency 2000~ms $\times$ \emph{throughput} nominal 1250~msg/s $\times$ faktor keamanan 2).
 
-\begin{table}[H]
-    \centering
-    \caption{Perbandingan metrik pada skenario beban periodic step}
-    \label{tab:result-periodic}
-    \renewcommand{\arraystretch}{1.4}
-    \begin{tabular}{|l|r|r|r|r|r|r|r|}
-    \hline
-    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
-    \hline
-    Backlog mean & 14593 & 14602 & 6280 & 15001 & 17345 & 11049 & 16473 \\
-    \hline
-    Backlog max & 23000 & 23000 & 12370 & 24027 & 27764 & 17954 & 28546 \\
-    \hline
-    Throughput (msg/s) & 240,7 & 246,8 & 694,5 & 150,5 & 185,9 & 130,2 & 7,4 \\
-    \hline
-    CPU mean (\%) & 5,4 & 5,8 & 11,3 & 9,2 & 3,2 & 18,8 & 0,0 \\
-    \hline
-    Batch size mean & 246 & 250 & 742 & 153 & 196 & 136 & 159 \\
-    \hline
-    Poll mean (ms) & 981 & 1000 & 1000 & 589 & 1915 & 293 & 712 \\
-    \hline
-    \end{tabular}
-\end{table}
+\subsection{Dekomposisi Biaya}
 
-Hasil periodic step menunjukkan pola serupa dengan step, dengan Q3 kembali menghasilkan backlog terendah di antara LQR (11049) dan PID tetap unggul secara keseluruhan.
-Perlu dicatat bahwa Q4 menunjukkan throughput sangat rendah (7,4 msg/s) dan CPU 0\%, yang mengindikasikan anomali pada eksekusi.
-Data ANN pada skenario ini juga menunjukkan throughput dan utilisasi nol, sehingga hasil ANN pada periodic step tidak dapat digunakan untuk analisis.
+Dekomposisi biaya per komponen state menunjukkan bahwa pada seluruh kontroler, kontribusi
+\emph{queue length} mendominasi total biaya ($\geq 60\%$).
+Kontribusi CPU sangat kecil meskipun bobot Q pada cpu adalah 1 (Q1) dan 10 (Q2, Q4).
+Hal ini terjadi karena CPU tidak pernah menyimpang jauh dari target (5\%)---utilisasi CPU dalam
+operasi normal berkisar 5--40\%, dan penalti \emph{one-sided} hanya aktif di atas 5\%.
 
-\section{Analisis Hasil}
+Temuan ini mempertegas bahwa kunci performa kontroler adalah kemampuannya mempertahankan antrean
+serendah mungkin.
+State lain (cpu, mem, io) berperan sebagai batasan yang menentukan seberapa agresif drainase
+antrean dapat dilakukan.
 
-Bagian ini membahas temuan utama dari eksperimen closed-loop, mencakup perbandingan antar kontroler dan pengaruh pembobotan Q terhadap perilaku sistem.
+\section{Diskusi}
 
-\subsection{Perbandingan LQR terhadap Parameter Statik}
+\subsection{Keunggulan ANN-MLE}
 
-Dari keempat skenario, LQR-Q3 dengan prioritas latensi adalah satu-satunya varian yang konsisten menghasilkan backlog lebih rendah dari parameter statik.
-Pada ramp, Q3 mencapai backlog 9355 dibandingkan statik 10324 (penurunan 9,4\%).
-Pada step, Q3 menghasilkan 10883 vs statik 14157 (penurunan 23,1\%).
-
-Namun, keunggulan ini diperoleh dengan biaya utilisasi CPU yang lebih tinggi.
-Pada step, CPU Q3 mencapai 16,0\% dibanding statik 7,1\%.
-Hal ini sesuai dengan perilaku Q3 yang memperkecil poll interval (rata-rata 297 ms vs 1000 ms statik), sehingga sistem lebih sering melakukan polling dan pemrosesan.
-
-Varian lain (Q1, Q2, Q4) umumnya tidak menunjukkan keunggulan signifikan terhadap statik dalam hal backlog, bahkan beberapa menghasilkan backlog lebih tinggi.
-Ini menunjukkan bahwa pemilihan bobot Q sangat berpengaruh terhadap efektivitas LQR.
-
-\subsection{Perbandingan LQR terhadap PID}
-
-PID secara konsisten menghasilkan performa terbaik di semua skenario dari sisi backlog dan throughput.
-Backlog PID pada step hanya 6403 (vs LQR-Q3 10883), dan throughput PID 700,6 msg/s (vs LQR-Q3 132,4 msg/s).
-
-Penyebab utamanya adalah PID menggunakan batch size yang jauh lebih besar (rata-rata 550--751) dibanding LQR (120--196).
-Batch besar memungkinkan pemrosesan lebih banyak pesan per siklus, sehingga backlog turun lebih cepat.
-
-PID hanya mengontrol batch size berdasarkan satu sinyal, yaitu queue length, dengan poll interval tetap 1000 ms.
-LQR mengontrol batch size dan poll interval sekaligus berdasarkan seluruh state.
-Pada konfigurasi saat ini, pengendalian LQR yang lebih menyeluruh ini belum menghasilkan performa yang melampaui PID.
-
-Salah satu kemungkinan penyebabnya adalah rentang batch size yang digunakan LQR terlalu kecil.
-Batch size rata-rata LQR berkisar 120--196, jauh di bawah PID yang mencapai 750.
-Perbedaan ini terlihat pada Gambar~\ref{fig:timeseries-batch}. PID (kuning) menaikkan batch size hingga mendekati batas atas, sedangkan LQR (hijau) bergerak dalam rentang yang lebih sempit.
-Penyesuaian rentang operasi dan kalibrasi ulang matriks Q dan R berpotensi meningkatkan performa LQR.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{IV_8__timeseries_batch_Q1.png}
-    \caption{Perbandingan batch size terhadap waktu per kontroler pada setiap skenario beban}
-    \label{fig:timeseries-batch}
-\end{figure}
-
-\subsection{Pengaruh Pembobotan Q}
-
-Variasi bobot Q menghasilkan perilaku yang berbeda dan konsisten di semua skenario.
+Keunggulan ANN-MLE bersumber dari tiga hal:
 
 \begin{enumerate}
-\item \textbf{Q1 (backlog priority)} menghasilkan backlog dan perilaku yang tidak jauh berbeda dari statik.
-Bobot 10 pada queue length tampaknya belum cukup besar untuk menghasilkan perubahan signifikan pada aksi kontrol.
+\item \textbf{Bebas asumsi linearitas.}
+LQR mengasumsikan bahwa hubungan antara kontrol dan state bersifat linier.
+Pada kenyataannya, \emph{throughput} sebagai fungsi \emph{batch size} bersifat konkaf
+(diminishing returns setelah \emph{knee point}).
+ANN, yang dilatih langsung dari model \emph{throughput} empiris, dapat mempelajari hubungan
+non-linear ini.
 
-\item \textbf{Q2 (resource priority)} menghasilkan backlog tertinggi di semua skenario, namun dengan CPU terendah (3,2--4,9\%).
-Sesuai prioritasnya, Q2 menghemat sumber daya dengan mengorbankan kecepatan sinkronisasi.
-Poll interval Q2 juga paling panjang (rata-rata 1737--1915 ms), artinya sistem jarang melakukan polling.
+\item \textbf{Label berbasis kebijakan Boltzmann.}
+Daripada meniru orakel LQR (yang membatasi kualitas ANN), label pelatihan diturunkan dari
+ekspektasi kebijakan Boltzmann atas model \emph{throughput} empiris.
+Ekspektasi ini secara implisit mengoptimalkan trade-off antara drainase antrean (batch besar)
+dan biaya sumber daya (CPU).
 
-\item \textbf{Q3 (latency priority)} konsisten menghasilkan backlog terendah di antara varian LQR.
-Poll interval-nya paling pendek (293--380 ms) dan utilisasi CPU paling tinggi (12--18,8\%).
-Varian ini paling agresif dalam mengurangi latensi.
-
-\item \textbf{Q4 (balanced)} berada di antara Q1 dan Q2, tanpa keunggulan khusus.
-Pada periodic step, Q4 menunjukkan anomali berupa throughput yang sangat rendah.
+\item \textbf{Satu model untuk semua Q.}
+ANN universal menerima diagonal Q sebagai bagian input, sehingga satu bobot jaringan melayani
+seluruh konfigurasi prioritas tanpa perlu melatih ulang.
 \end{enumerate}
 
-Gambar~\ref{fig:heatmap-cost} menunjukkan nilai fungsi biaya $J$ untuk setiap kombinasi kontroler dan varian Q.
-Nilai $J$ yang lebih rendah berarti kontroler lebih mendekati kondisi yang diinginkan.
-PID memiliki $J$ terendah pada Q1 dan Q3, sedangkan LQR kompetitif pada Q2.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.75\textwidth]{IV_6__heatmap_cost_J.png}
-    \caption{Heatmap nilai fungsi biaya $J$ per kontroler dan varian Q}
-    \label{fig:heatmap-cost}
-\end{figure}
-
-Gambar~\ref{fig:cost-decomposition} memperlihatkan dekomposisi biaya per komponen state untuk setiap kontroler pada varian Q1.
-Pada PID, proporsi biaya backlog jauh lebih kecil dibanding statik dan LQR, namun biaya aksi kontrol lebih besar karena perubahan batch size yang agresif.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{IV_7__cost_decomposition_Q1.png}
-    \caption{Dekomposisi fungsi biaya per komponen pada varian Q1}
-    \label{fig:cost-decomposition}
-\end{figure}
-
-Hasil ini mengonfirmasi bahwa pembobotan Q pada LQR berfungsi sesuai teori.
-Perbedaan prioritas menghasilkan trade-off yang berbeda, dan perancang sistem dapat memilih konfigurasi sesuai kebutuhan operasional.
-
-\subsection{Keterbatasan dan Temuan}
-
-Selama eksperimen, ditemukan beberapa keterbatasan yang perlu diperhatikan untuk pengembangan selanjutnya.
+\subsection{Keterbatasan dan Arah Pengembangan}
 
 \begin{enumerate}
-\item Model linier memiliki $R^2$ rendah untuk utilisasi memori (\rsqMem) dan operasi I/O (\rsqIo).
-Kedua variabel ini kurang terprediksi oleh model, yang menjadi keterbatasan pendekatan LQR.
+\item Model \emph{throughput} untuk pelatihan ANN mengasumsikan bahwa \emph{throughput} antar
+percobaan tetap konstan (tidak bergantung pada kondisi Elasticsearch yang berubah seperti
+\emph{segment merge} atau tekanan \emph{heap}).
+Dalam praktik, \emph{throughput} bervariasi, sehingga model perlu diperbarui secara berkala.
 
-\item Rentang aksi kontrol LQR (batch size 120--196) jauh lebih kecil dari PID (550--751).
-Hal ini membatasi kemampuan LQR dalam mengurangi backlog secara agresif.
-Perlu dilakukan kalibrasi ulang agar LQR dapat menggunakan rentang batch size yang lebih lebar.
+\item Eksperimen dilakukan dalam satu kali percobaan per kombinasi.
+Replikasi diperlukan untuk mengkonfirmasi signifikansi statistik dari perbedaan yang teramati.
 
-\item Pada skenario periodic step, LQR-Q4 dan seluruh varian ANN menunjukkan anomali berupa throughput dan utilisasi nol.
-Kemungkinan penyebabnya adalah kontroler menghasilkan parameter di luar rentang operasional yang valid, atau terjadi timeout pada eksekusi.
-Hasil ini perlu diinvestigasi dan eksperimen perlu diulang.
-
-\item Eksperimen dilakukan dengan satu kali pengulangan per kombinasi.
-Hasil belum dapat diklaim signifikan secara statistik tanpa repetisi yang memadai.
-% TODO: hapus poin ini jika eksperimen sudah diulang
+\item Portabilitas ke perangkat keras yang berbeda memerlukan pengukuran ulang kapasitas
+(\emph{capacity benchmark}), normalisasi operasional, dan kemungkinan pelatihan ulang ANN.
+Namun prosedur ini hanya memerlukan waktu sekitar 30 menit---jauh lebih singkat dibanding
+identifikasi sistem penuh (\emph{open-loop sysid}).
 \end{enumerate}
