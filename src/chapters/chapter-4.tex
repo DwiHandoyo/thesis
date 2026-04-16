@@ -1,16 +1,495 @@
-% [TEMPLATE] Bab 4 - Contoh format bab dengan beberapa anak bab
-% Uncomment untuk digunakan sebagai referensi formatting
+\chapter{Eksperimen dan Analisis}
 
-% \chapter{Contoh Penulsan Judul Bab dengan Panjang Lebih dari Satu Baris}
-%
-% \section{Contoh Penulisan Judul Anak Bab dengan Panjang Lebih dari Satu Baris}
-% \blindtext
-%
-% \section{Skenario Pengujian}
-% \blindtext
-%
-% \section{Hasil Pengujian}
-% \blindtext
-%
-% \section{Pembahasan}
-% \blindtext
+Untuk menguji pendekatan pengendalian yang telah dirancang, dilakukan dua tahap eksperimen.
+Tahap pertama adalah eksperimen open-loop untuk mengidentifikasi model dinamika sistem.
+Tahap kedua adalah eksperimen closed-loop untuk membandingkan performa berbagai strategi pengendalian pada beberapa skenario beban.
+
+% =============================================================================
+% DATA COMMANDS — ganti nilai di sini jika data eksperimen berubah
+% =============================================================================
+
+% --- Open-loop ---
+\newcommand{\openloopdate}{28 Maret 2026}
+\newcommand{\openloopsamples}{6760}
+\newcommand{\openloopinterval}{1}
+
+% --- Fit quality (R²) ---
+\newcommand{\rsqQueue}{0,986}
+\newcommand{\rsqCpu}{0,635}
+\newcommand{\rsqMem}{0,106}
+\newcommand{\rsqIo}{0,173}
+\newcommand{\rsqLatency}{0,940}
+
+% --- Closed-loop ---
+\newcommand{\closedloopdate}{1 April 2026}
+\newcommand{\closedloopsamples}{1352}
+\newcommand{\closedloopduration}{600}
+
+% --- Resource config ---
+\newcommand{\escpus}{1,0}
+\newcommand{\esmemory}{1024 MB}
+\newcommand{\esjavaheap}{512 MB}
+\newcommand{\esversion}{8.10.0}
+
+% --- Static baseline ---
+\newcommand{\staticbatch}{250}
+\newcommand{\staticpoll}{1000}
+
+% =============================================================================
+
+\section{Tujuan Eksperimen}
+
+Eksperimen pada penelitian ini bertujuan untuk menjawab tiga hal.
+Pertama, apakah dinamika sinkronisasi CQRS dapat dimodelkan sebagai sistem linier dalam kerangka state-space.
+Kedua, apakah kontroler LQR yang dirancang dari model tersebut mampu mengatur parameter sinkronisasi secara adaptif.
+Ketiga, bagaimana performa LQR dibandingkan dengan pendekatan lain, yaitu parameter statik, aturan berbasis ambang batas, dan PID.
+
+\section{Lingkungan Eksperimen}
+
+Seluruh eksperimen dijalankan pada lingkungan yang sama untuk menjaga konsistensi hasil.
+Arsitektur sistem uji mengikuti rancangan pada Bab III (lihat Gambar~\ref{fig:arsitektur-desain}), terdiri dari write model, message broker, message sink, dan read database.
+
+Komponen read database menggunakan Elasticsearch versi \esversion{} dengan alokasi \escpus{} CPU, memori \esmemory{}, dan Java heap \esjavaheap{}.
+Konfigurasi ini dijaga tetap selama seluruh eksperimen.
+
+% TODO: tambahkan tabel spesifikasi hardware lengkap jika diperlukan
+
+\section{Eksperimen Open-Loop dan Identifikasi Sistem}
+
+Sebelum merancang kontroler, perlu diketahui terlebih dahulu bagaimana sistem merespons perubahan parameter.
+Untuk itu dilakukan eksperimen open-loop, di mana parameter sinkronisasi divariasikan tanpa kontroler aktif dan respons sistem dicatat.
+Data dari eksperimen ini kemudian digunakan untuk mengestimasi model state-space.
+
+\subsection{Prosedur Eksperimen}
+
+Eksperimen open-loop dilakukan pada tanggal \openloopdate{}.
+Sistem sinkronisasi dijalankan tanpa kontroler aktif, dan parameter batch size serta poll interval divariasikan secara sistematis.
+Variabel state dicatat setiap \openloopinterval{} detik, menghasilkan total \openloopsamples{} data point.
+
+Variabel state yang diukur adalah jumlah antrian pesan (\emph{queue length}), utilisasi CPU, utilisasi memori, operasi I/O tulis, dan rata-rata latensi.
+Variabel kontrol yang divariasikan adalah batch size dan poll interval.
+
+\subsection{Hasil Identifikasi Sistem}
+
+Dari data tersebut, model state-space $x_{k+1} = Ax_k + Bu_k$ diestimasi menggunakan regresi linier.
+Matriks A berukuran 5$\times$5 dan matriks B berukuran 5$\times$2.
+
+Kualitas model diukur menggunakan koefisien determinasi ($R^2$) untuk setiap variabel state (Tabel~\ref{tab:sysid-fit}).
+
+\begin{table}[H]
+    \centering
+    \caption{Kualitas fit model state-space per variabel}
+    \label{tab:sysid-fit}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|c|l|}
+    \hline
+    \textbf{Variabel State} & \textbf{$R^2$} & \textbf{Interpretasi} \\
+    \hline
+    Queue length & \rsqQueue & Sangat baik \\
+    \hline
+    Rata-rata latensi & \rsqLatency & Baik \\
+    \hline
+    Utilisasi CPU & \rsqCpu & Cukup \\
+    \hline
+    Operasi I/O tulis & \rsqIo & Rendah \\
+    \hline
+    Utilisasi memori & \rsqMem & Rendah \\
+    \hline
+    \end{tabular}
+\end{table}
+
+Queue length dan latensi memiliki $R^2$ tinggi, artinya kedua variabel ini dapat diprediksi dengan baik oleh model linier.
+Utilisasi CPU cukup, sedangkan memori dan I/O rendah.
+$R^2$ yang rendah pada memori dan I/O kemungkinan disebabkan oleh faktor non-linear seperti garbage collection dan caching yang sulit ditangkap model linier.
+
+Meski demikian, variabel utama yang menjadi fokus pengendalian, yaitu queue length dan latensi, memiliki model yang cukup akurat untuk digunakan sebagai dasar perancangan kontroler LQR.
+
+Gambar~\ref{fig:openloop-correlation} menunjukkan korelasi antar variabel kontrol dan state.
+Batch size memiliki korelasi negatif kuat dengan perubahan queue length ($r = -0{,}63$), yang mengonfirmasi bahwa batch yang lebih besar membantu mengurangi backlog.
+Poll interval juga berkorelasi positif dengan queue length ($r = 0{,}51$) karena interval yang lebih panjang memperlambat konsumsi pesan.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{IV_1__correlation_matrix.png}
+    \caption{Korelasi antar variabel kontrol dan state pada eksperimen open-loop}
+    \label{fig:openloop-correlation}
+\end{figure}
+
+Gambar~\ref{fig:openloop-scatter} memperlihatkan hubungan antara setiap variabel kontrol dan setiap variabel state secara individual, dilengkapi garis regresi linier dan nilai korelasi.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_2__scatter_control_vs_state.png}
+    \caption{Scatter plot variabel kontrol terhadap variabel state}
+    \label{fig:openloop-scatter}
+\end{figure}
+
+Gambar~\ref{fig:openloop-timeseries} menampilkan perubahan seluruh variabel terhadap waktu selama eksperimen open-loop.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_3__timeseries_openloop.png}
+    \caption{Time series variabel state dan kontrol selama eksperimen open-loop}
+    \label{fig:openloop-timeseries}
+\end{figure}
+
+\section{Perancangan Kontroler}
+
+Berdasarkan model yang diperoleh, beberapa strategi pengendalian dirancang dan diuji.
+Selain LQR, tiga baseline dan empat varian ANN juga digunakan sebagai pembanding.
+
+\subsection{Konfigurasi LQR}
+
+Sebagaimana dibahas pada Bab II, matriks Q pada LQR menentukan seberapa besar penalti yang diberikan ketika masing-masing variabel state menyimpang dari kondisi yang diinginkan.
+Matriks Q berbentuk diagonal, di mana setiap elemen diagonal berkorespondensi dengan satu variabel state sesuai urutan vektor state $\mathbf{x} = [queue\_length, cpu, mem, io, latency]^T$.
+Semakin besar nilai elemen diagonal untuk suatu variabel, semakin keras sistem berusaha menekan deviasi variabel tersebut, bahkan jika itu berarti variabel lain harus dikorbankan.
+
+Empat varian Q dirancang untuk menguji skenario prioritas yang berbeda (Tabel~\ref{tab:lqr-variants}).
+Matriks R dijaga sama untuk seluruh varian agar perbedaan perilaku berasal dari Q saja.
+
+\begin{table}[H]
+    \centering
+    \caption{Varian pembobotan LQR}
+    \label{tab:lqr-variants}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|c|l|l|}
+    \hline
+    \textbf{Varian} & \textbf{Prioritas} & \textbf{Diagonal Q} \\
+    \hline
+    Q1 & Prioritas backlog & diag(10, 1, 1, 1, 1) \\
+    \hline
+    Q2 & Prioritas utilisasi sumber daya & diag(1, 10, 10, 10, 1) \\
+    \hline
+    Q3 & Prioritas latensi & diag(1, 1, 1, 1, 10) \\
+    \hline
+    Q4 & Seimbang & diag(1, 1, 1, 1, 1) \\
+    \hline
+    \end{tabular}
+\end{table}
+
+Pada Q1, elemen pertama (queue length) diberi bobot 10 sedangkan sisanya 1.
+Artinya, deviasi backlog dianggap 10 kali lebih ``mahal'' dibanding deviasi CPU, memori, I/O, atau latensi.
+Kontroler akan berusaha menurunkan backlog lebih dulu, meskipun utilisasi sumber daya menjadi kurang efisien.
+
+Pada Q2, bobot 10 diberikan pada tiga variabel sumber daya sekaligus (CPU, memori, I/O).
+Kontroler akan menjaga agar utilisasi sumber daya tetap rendah, meskipun backlog bertambah.
+Varian ini merepresentasikan skenario di mana kapasitas server terbatas dan overload harus dihindari.
+
+Pada Q3, bobot 10 diberikan pada latensi saja.
+Kontroler akan memprioritaskan penurunan waktu tunggu sinkronisasi, yang secara tidak langsung juga menekan backlog karena pemrosesan dipercepat.
+
+Pada Q4, seluruh elemen diagonal bernilai 1 sehingga tidak ada variabel yang diprioritaskan.
+Varian ini menjadi baseline untuk melihat perilaku LQR tanpa preferensi tertentu.
+
+\subsection{Konfigurasi Baseline}
+
+Tiga strategi baseline digunakan sebagai pembanding.
+
+\begin{enumerate}
+\item \textbf{Statik.} Batch size tetap \staticbatch{} dan poll interval tetap \staticpoll{} ms. Tidak ada penyesuaian parameter.
+
+\item \textbf{Rule-based.} Parameter disesuaikan berdasarkan dua aturan sederhana.
+Jika queue length melebihi 5000, batch size dinaikkan 50.
+Jika utilisasi CPU melebihi 80\%, batch size diturunkan 50.
+Poll interval dijaga tetap.
+
+\item \textbf{PID.} Kontroler PID mengatur batch size berdasarkan selisih queue length terhadap target nol.
+Parameter yang digunakan adalah $K_p = 0{,}1$, $K_i = 0{,}01$, $K_d = 0{,}05$ dengan poll interval tetap pada 1000 ms.
+PID hanya mengontrol satu variabel (batch size) berdasarkan satu sinyal error (queue length).
+\end{enumerate}
+
+\subsection{Konfigurasi ANN}
+
+Empat varian kontroler berbasis Artificial Neural Network (ANN) juga diuji.
+Masing-masing varian (ann\_q1 sampai ann\_q4) dilatih dengan fungsi biaya yang sesuai dengan varian Q pada LQR, sehingga perbandingan antara LQR dan ANN dilakukan secara adil.
+
+% TODO: tambahkan arsitektur ANN (jumlah layer, neuron, aktivasi) jika diperlukan
+
+\section{Hasil Eksperimen Closed-Loop}
+
+Eksperimen closed-loop dilakukan pada tanggal \closedloopdate{} dengan total \closedloopsamples{} sampel.
+Setiap kombinasi kontroler dan pola beban dijalankan selama maksimal \closedloopduration{} detik.
+Empat pola beban diuji sesuai rancangan pada Bab III, dengan konfigurasi beban sebagai berikut.
+
+\begin{table}[H]
+    \centering
+    \caption{Konfigurasi skenario beban}
+    \label{tab:load-config}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|l|}
+    \hline
+    \textbf{Skenario} & \textbf{Konfigurasi} \\
+    \hline
+    Step & Rate 1000 msg/s, durasi 30 detik \\
+    \hline
+    Ramp & Peak rate 2000 msg/s, durasi 30 detik \\
+    \hline
+    Impulse & Rate 10000 msg/s, burst 1 detik \\
+    \hline
+    Periodic step & High 1500/low 500 msg/s, half-period 3 detik, durasi 30 detik \\
+    \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Skenario Beban Step}
+
+Beban step mensimulasikan lonjakan trafik mendadak dengan rate tetap 1000 msg/s selama 30 detik.
+Hasil perbandingan metrik utama ditunjukkan pada Tabel~\ref{tab:result-step}.
+
+\begin{table}[H]
+    \centering
+    \caption{Perbandingan metrik pada skenario beban step}
+    \label{tab:result-step}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|r|r|r|r|r|r|r|}
+    \hline
+    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
+    \hline
+    Backlog mean & 14157 & 14155 & 6403 & 14643 & 16809 & 10883 & 14607 \\
+    \hline
+    Backlog max & 22750 & 23250 & 11096 & 24239 & 27240 & 18502 & 23866 \\
+    \hline
+    Throughput (msg/s) & 241,7 & 248,1 & 700,6 & 149,4 & 183,9 & 132,4 & 155,1 \\
+    \hline
+    CPU mean (\%) & 7,1 & 6,6 & 13,8 & 9,5 & 3,3 & 16,0 & 7,1 \\
+    \hline
+    Mem mean (\%) & 53,7 & 56,2 & 57,0 & 51,0 & 54,8 & 56,0 & 52,5 \\
+    \hline
+    Batch size mean & 250 & 250 & 751 & 151 & 192 & 136 & 158 \\
+    \hline
+    Poll mean (ms) & 1000 & 1000 & 1000 & 607 & 1911 & 297 & 591 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+Gambar~\ref{fig:queue-vs-load} memperlihatkan pergerakan queue length terhadap waktu untuk setiap kontroler pada keempat skenario beban.
+Area abu-abu menunjukkan laju injeksi pesan.
+PID (kuning) paling cepat menurunkan backlog, sedangkan LQR (hijau) menurunkannya secara lebih bertahap.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_4__queue_vs_load_Q1.png}
+    \caption[Queue length terhadap waktu pada berbagai skenario beban]{Queue length terhadap waktu pada berbagai skenario beban, dengan laju injeksi pesan (area abu-abu) sebagai referensi}
+    \label{fig:queue-vs-load}
+\end{figure}
+
+Distribusi queue length per kontroler ditunjukkan pada Gambar~\ref{fig:boxplot-queue}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_5__boxplot_queue_Q1.png}
+    \caption{Distribusi queue length per kontroler pada setiap skenario beban}
+    \label{fig:boxplot-queue}
+\end{figure}
+
+Pada skenario step, PID menghasilkan backlog terendah (6403) dengan throughput tertinggi (700,6 msg/s), namun dengan batch size rata-rata 751 dan utilisasi CPU 13,8\%.
+Dari varian LQR, Q3 (prioritas latensi) menunjukkan backlog terendah (10883) dengan poll interval terpendek (297 ms) dan CPU tertinggi (16,0\%).
+Q2 (prioritas resource) justru menghasilkan backlog tertinggi (16809) dengan CPU terendah (3,3\%), sesuai dengan prioritasnya yang mengutamakan penghematan sumber daya.
+Q4 (seimbang) dan Q1 (prioritas backlog) menghasilkan backlog serupa dengan statik, menunjukkan bahwa bobot Q yang dipilih belum cukup efektif pada skenario ini.
+
+\subsection{Skenario Beban Ramp}
+
+Beban ramp meningkat secara bertahap dari nol hingga peak rate 2000 msg/s selama 30 detik.
+
+\begin{table}[H]
+    \centering
+    \caption{Perbandingan metrik pada skenario beban ramp}
+    \label{tab:result-ramp}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|r|r|r|r|r|r|r|}
+    \hline
+    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
+    \hline
+    Backlog mean & 10324 & 10339 & 6624 & 11281 & 13023 & 9355 & 11119 \\
+    \hline
+    Backlog max & 23166 & 22405 & 15156 & 24946 & 26871 & 21867 & 24847 \\
+    \hline
+    Throughput (msg/s) & 219,1 & 228,7 & 629,1 & 116,8 & 156,8 & 125,6 & 130,6 \\
+    \hline
+    CPU mean (\%) & 6,3 & 6,4 & 10,7 & 6,7 & 4,9 & 13,3 & 10,8 \\
+    \hline
+    Mem mean (\%) & 52,8 & 55,4 & 53,9 & 56,2 & 51,7 & 55,3 & 50,4 \\
+    \hline
+    Batch size mean & 242 & 250 & 665 & 140 & 170 & 126 & 144 \\
+    \hline
+    Poll mean (ms) & 960 & 1000 & 1000 & 671 & 1737 & 380 & 671 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+Pola yang terlihat pada ramp serupa dengan step.
+PID tetap unggul di backlog dan throughput, sedangkan Q3 kembali menjadi varian LQR dengan backlog terendah (9355), bahkan sedikit lebih rendah dari statik (10324).
+Ini menunjukkan bahwa pada beban yang meningkat bertahap, LQR-Q3 mulai menunjukkan keunggulan dibanding parameter statik.
+
+\subsection{Skenario Beban Impulse}
+
+Beban impulse mensimulasikan lonjakan singkat 10000 msg/s selama 1 detik, diikuti kembali ke kondisi normal.
+
+\begin{table}[H]
+    \centering
+    \caption{Perbandingan metrik pada skenario beban impulse}
+    \label{tab:result-impulse}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|r|r|r|r|r|r|r|}
+    \hline
+    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
+    \hline
+    Backlog mean & 6604 & 6762 & 4092 & 7114 & 7951 & 6089 & 7322 \\
+    \hline
+    Backlog max & 10000 & 9000 & 9901 & 10000 & 10000 & 10000 & 10000 \\
+    \hline
+    Throughput (msg/s) & 233,1 & 255,1 & 572,6 & 137,4 & 132,8 & 112,8 & 124,5 \\
+    \hline
+    CPU mean (\%) & 5,6 & 5,9 & 7,4 & 8,0 & 3,2 & 12,0 & 6,2 \\
+    \hline
+    Mem mean (\%) & 53,0 & 53,0 & 41,2 & 55,3 & 36,9 & 58,4 & 46,9 \\
+    \hline
+    Batch size mean & 243 & 250 & 551 & 125 & 143 & 120 & 128 \\
+    \hline
+    Poll mean (ms) & 960 & 1000 & 1000 & 680 & 1796 & 367 & 678 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+Pada impulse, seluruh kontroler mencapai backlog max sekitar 10000 karena lonjakan beban yang sangat tinggi (10000 msg/s).
+Yang membedakan adalah kecepatan pemulihan setelah lonjakan.
+LQR-Q3 menghasilkan backlog mean terendah di antara varian LQR (6089), mendekati statik (6604).
+Rule-based memiliki backlog max terendah (9000), menunjukkan bahwa aturan sederhana cukup efektif untuk gangguan singkat.
+
+\subsection{Skenario Beban Periodic Step}
+
+Beban periodic step bergantian antara 1500 dan 500 msg/s setiap 3 detik selama 30 detik.
+
+\begin{table}[H]
+    \centering
+    \caption{Perbandingan metrik pada skenario beban periodic step}
+    \label{tab:result-periodic}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|r|r|r|r|r|r|r|}
+    \hline
+    \textbf{Metrik} & \textbf{Static} & \textbf{Rule} & \textbf{PID} & \textbf{Q1} & \textbf{Q2} & \textbf{Q3} & \textbf{Q4} \\
+    \hline
+    Backlog mean & 14593 & 14602 & 6280 & 15001 & 17345 & 11049 & 16473 \\
+    \hline
+    Backlog max & 23000 & 23000 & 12370 & 24027 & 27764 & 17954 & 28546 \\
+    \hline
+    Throughput (msg/s) & 240,7 & 246,8 & 694,5 & 150,5 & 185,9 & 130,2 & 7,4 \\
+    \hline
+    CPU mean (\%) & 5,4 & 5,8 & 11,3 & 9,2 & 3,2 & 18,8 & 0,0 \\
+    \hline
+    Batch size mean & 246 & 250 & 742 & 153 & 196 & 136 & 159 \\
+    \hline
+    Poll mean (ms) & 981 & 1000 & 1000 & 589 & 1915 & 293 & 712 \\
+    \hline
+    \end{tabular}
+\end{table}
+
+Hasil periodic step menunjukkan pola serupa dengan step, dengan Q3 kembali menghasilkan backlog terendah di antara LQR (11049) dan PID tetap unggul secara keseluruhan.
+Perlu dicatat bahwa Q4 menunjukkan throughput sangat rendah (7,4 msg/s) dan CPU 0\%, yang mengindikasikan anomali pada eksekusi.
+Data ANN pada skenario ini juga menunjukkan throughput dan utilisasi nol, sehingga hasil ANN pada periodic step tidak dapat digunakan untuk analisis.
+
+\section{Analisis Hasil}
+
+Bagian ini membahas temuan utama dari eksperimen closed-loop, mencakup perbandingan antar kontroler dan pengaruh pembobotan Q terhadap perilaku sistem.
+
+\subsection{Perbandingan LQR terhadap Parameter Statik}
+
+Dari keempat skenario, LQR-Q3 dengan prioritas latensi adalah satu-satunya varian yang konsisten menghasilkan backlog lebih rendah dari parameter statik.
+Pada ramp, Q3 mencapai backlog 9355 dibandingkan statik 10324 (penurunan 9,4\%).
+Pada step, Q3 menghasilkan 10883 vs statik 14157 (penurunan 23,1\%).
+
+Namun, keunggulan ini diperoleh dengan biaya utilisasi CPU yang lebih tinggi.
+Pada step, CPU Q3 mencapai 16,0\% dibanding statik 7,1\%.
+Hal ini sesuai dengan perilaku Q3 yang memperkecil poll interval (rata-rata 297 ms vs 1000 ms statik), sehingga sistem lebih sering melakukan polling dan pemrosesan.
+
+Varian lain (Q1, Q2, Q4) umumnya tidak menunjukkan keunggulan signifikan terhadap statik dalam hal backlog, bahkan beberapa menghasilkan backlog lebih tinggi.
+Ini menunjukkan bahwa pemilihan bobot Q sangat berpengaruh terhadap efektivitas LQR.
+
+\subsection{Perbandingan LQR terhadap PID}
+
+PID secara konsisten menghasilkan performa terbaik di semua skenario dari sisi backlog dan throughput.
+Backlog PID pada step hanya 6403 (vs LQR-Q3 10883), dan throughput PID 700,6 msg/s (vs LQR-Q3 132,4 msg/s).
+
+Penyebab utamanya adalah PID menggunakan batch size yang jauh lebih besar (rata-rata 550--751) dibanding LQR (120--196).
+Batch besar memungkinkan pemrosesan lebih banyak pesan per siklus, sehingga backlog turun lebih cepat.
+
+PID hanya mengontrol batch size berdasarkan satu sinyal, yaitu queue length, dengan poll interval tetap 1000 ms.
+LQR mengontrol batch size dan poll interval sekaligus berdasarkan seluruh state.
+Pada konfigurasi saat ini, pengendalian LQR yang lebih menyeluruh ini belum menghasilkan performa yang melampaui PID.
+
+Salah satu kemungkinan penyebabnya adalah rentang batch size yang digunakan LQR terlalu kecil.
+Batch size rata-rata LQR berkisar 120--196, jauh di bawah PID yang mencapai 750.
+Perbedaan ini terlihat pada Gambar~\ref{fig:timeseries-batch}. PID (kuning) menaikkan batch size hingga mendekati batas atas, sedangkan LQR (hijau) bergerak dalam rentang yang lebih sempit.
+Penyesuaian rentang operasi dan kalibrasi ulang matriks Q dan R berpotensi meningkatkan performa LQR.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_8__timeseries_batch_Q1.png}
+    \caption{Perbandingan batch size terhadap waktu per kontroler pada setiap skenario beban}
+    \label{fig:timeseries-batch}
+\end{figure}
+
+\subsection{Pengaruh Pembobotan Q}
+
+Variasi bobot Q menghasilkan perilaku yang berbeda dan konsisten di semua skenario.
+
+\begin{enumerate}
+\item \textbf{Q1 (backlog priority)} menghasilkan backlog dan perilaku yang tidak jauh berbeda dari statik.
+Bobot 10 pada queue length tampaknya belum cukup besar untuk menghasilkan perubahan signifikan pada aksi kontrol.
+
+\item \textbf{Q2 (resource priority)} menghasilkan backlog tertinggi di semua skenario, namun dengan CPU terendah (3,2--4,9\%).
+Sesuai prioritasnya, Q2 menghemat sumber daya dengan mengorbankan kecepatan sinkronisasi.
+Poll interval Q2 juga paling panjang (rata-rata 1737--1915 ms), artinya sistem jarang melakukan polling.
+
+\item \textbf{Q3 (latency priority)} konsisten menghasilkan backlog terendah di antara varian LQR.
+Poll interval-nya paling pendek (293--380 ms) dan utilisasi CPU paling tinggi (12--18,8\%).
+Varian ini paling agresif dalam mengurangi latensi.
+
+\item \textbf{Q4 (balanced)} berada di antara Q1 dan Q2, tanpa keunggulan khusus.
+Pada periodic step, Q4 menunjukkan anomali berupa throughput yang sangat rendah.
+\end{enumerate}
+
+Gambar~\ref{fig:heatmap-cost} menunjukkan nilai fungsi biaya $J$ untuk setiap kombinasi kontroler dan varian Q.
+Nilai $J$ yang lebih rendah berarti kontroler lebih mendekati kondisi yang diinginkan.
+PID memiliki $J$ terendah pada Q1 dan Q3, sedangkan LQR kompetitif pada Q2.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{IV_6__heatmap_cost_J.png}
+    \caption{Heatmap nilai fungsi biaya $J$ per kontroler dan varian Q}
+    \label{fig:heatmap-cost}
+\end{figure}
+
+Gambar~\ref{fig:cost-decomposition} memperlihatkan dekomposisi biaya per komponen state untuk setiap kontroler pada varian Q1.
+Pada PID, proporsi biaya backlog jauh lebih kecil dibanding statik dan LQR, namun biaya aksi kontrol lebih besar karena perubahan batch size yang agresif.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_7__cost_decomposition_Q1.png}
+    \caption{Dekomposisi fungsi biaya per komponen pada varian Q1}
+    \label{fig:cost-decomposition}
+\end{figure}
+
+Hasil ini mengonfirmasi bahwa pembobotan Q pada LQR berfungsi sesuai teori.
+Perbedaan prioritas menghasilkan trade-off yang berbeda, dan perancang sistem dapat memilih konfigurasi sesuai kebutuhan operasional.
+
+\subsection{Keterbatasan dan Temuan}
+
+Selama eksperimen, ditemukan beberapa keterbatasan yang perlu diperhatikan untuk pengembangan selanjutnya.
+
+\begin{enumerate}
+\item Model linier memiliki $R^2$ rendah untuk utilisasi memori (\rsqMem) dan operasi I/O (\rsqIo).
+Kedua variabel ini kurang terprediksi oleh model, yang menjadi keterbatasan pendekatan LQR.
+
+\item Rentang aksi kontrol LQR (batch size 120--196) jauh lebih kecil dari PID (550--751).
+Hal ini membatasi kemampuan LQR dalam mengurangi backlog secara agresif.
+Perlu dilakukan kalibrasi ulang agar LQR dapat menggunakan rentang batch size yang lebih lebar.
+
+\item Pada skenario periodic step, LQR-Q4 dan seluruh varian ANN menunjukkan anomali berupa throughput dan utilisasi nol.
+Kemungkinan penyebabnya adalah kontroler menghasilkan parameter di luar rentang operasional yang valid, atau terjadi timeout pada eksekusi.
+Hasil ini perlu diinvestigasi dan eksperimen perlu diulang.
+
+\item Eksperimen dilakukan dengan satu kali pengulangan per kombinasi.
+Hasil belum dapat diklaim signifikan secara statistik tanpa repetisi yang memadai.
+% TODO: hapus poin ini jika eksperimen sudah diulang
+\end{enumerate}
