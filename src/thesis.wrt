@@ -125,57 +125,96 @@
 \@writefile{atoc}{\contentsline {section}{\numberline {IV.1}Tujuan Eksperimen}{52}{section.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {IV.2}Lingkungan Eksperimen}{52}{section.4.2}\protected@file@percent }
 \@writefile{atoc}{\contentsline {section}{\numberline {IV.2}Lingkungan Eksperimen}{52}{section.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {IV.3}Eksperimen Open-Loop dan Identifikasi Sistem}{52}{section.4.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {IV.3}Eksperimen Open-Loop dan Identifikasi Sistem}{52}{section.4.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.3.1}Prosedur Eksperimen}{53}{subsection.4.3.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.3.1}Prosedur Eksperimen}{53}{subsection.4.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.3.2}Hasil Identifikasi Sistem}{53}{subsection.4.3.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.3.2}Hasil Identifikasi Sistem}{53}{subsection.4.3.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.1}{\ignorespaces Kualitas fit model state-space per variabel}}{53}{table.caption.15}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.1}{\ignorespaces Korelasi antar variabel kontrol dan state pada eksperimen open-loop}}{54}{figure.caption.16}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.2}{\ignorespaces Scatter plot variabel kontrol terhadap variabel state}}{55}{figure.caption.17}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.3}{\ignorespaces Time series variabel state dan kontrol selama eksperimen open-loop}}{56}{figure.caption.18}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {IV.4}Perancangan Kontroler}{56}{section.4.4}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {IV.4}Perancangan Kontroler}{56}{section.4.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.4.1}Konfigurasi LQR}{56}{subsection.4.4.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.4.1}Konfigurasi LQR}{56}{subsection.4.4.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.2}{\ignorespaces Varian pembobotan LQR}}{57}{table.caption.19}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.4.2}Konfigurasi Baseline}{57}{subsection.4.4.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.4.2}Konfigurasi Baseline}{57}{subsection.4.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.4.3}Konfigurasi ANN}{58}{subsection.4.4.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.4.3}Konfigurasi ANN}{58}{subsection.4.4.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {IV.5}Hasil Eksperimen Closed-Loop}{58}{section.4.5}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {IV.5}Hasil Eksperimen Closed-Loop}{58}{section.4.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.3}{\ignorespaces Konfigurasi skenario beban}}{58}{table.caption.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.1}Skenario Beban Step}{58}{subsection.4.5.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.1}Skenario Beban Step}{58}{subsection.4.5.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.4}{\ignorespaces Perbandingan metrik pada skenario beban step}}{59}{table.caption.21}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.4}{\ignorespaces Queue length terhadap waktu pada berbagai skenario beban}}{60}{figure.caption.22}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.5}{\ignorespaces Distribusi queue length per kontroler pada setiap skenario beban}}{60}{figure.caption.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.2}Skenario Beban Ramp}{61}{subsection.4.5.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.2}Skenario Beban Ramp}{61}{subsection.4.5.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.5}{\ignorespaces Perbandingan metrik pada skenario beban ramp}}{61}{table.caption.24}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.3}Skenario Beban Impulse}{61}{subsection.4.5.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.3}Skenario Beban Impulse}{61}{subsection.4.5.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.6}{\ignorespaces Perbandingan metrik pada skenario beban impulse}}{62}{table.caption.25}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.4}Skenario Beban Periodic Step}{62}{subsection.4.5.4}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.4}Skenario Beban Periodic Step}{62}{subsection.4.5.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.7}{\ignorespaces Perbandingan metrik pada skenario beban periodic step}}{62}{table.caption.26}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {IV.6}Analisis Hasil}{63}{section.4.6}\protected@file@percent }
-\@writefile{atoc}{\contentsline {section}{\numberline {IV.6}Analisis Hasil}{63}{section.4.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.1}Perbandingan LQR terhadap Parameter Statik}{63}{subsection.4.6.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.1}Perbandingan LQR terhadap Parameter Statik}{63}{subsection.4.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.2}Perbandingan LQR terhadap PID}{63}{subsection.4.6.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.2}Perbandingan LQR terhadap PID}{63}{subsection.4.6.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.6}{\ignorespaces Perbandingan batch size terhadap waktu per kontroler pada setiap skenario beban}}{64}{figure.caption.27}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.3}Pengaruh Pembobotan Q}{65}{subsection.4.6.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.3}Pengaruh Pembobotan Q}{65}{subsection.4.6.3}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.7}{\ignorespaces Heatmap nilai fungsi biaya $J$ per kontroler dan varian Q}}{66}{figure.caption.28}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.8}{\ignorespaces Dekomposisi fungsi biaya per komponen pada varian Q1}}{66}{figure.caption.29}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.4}Keterbatasan dan Temuan}{66}{subsection.4.6.4}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.4}Keterbatasan dan Temuan}{66}{subsection.4.6.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{Daftar Pustaka}{67}{Item.28}\protected@file@percent }
-\@writefile{atoc}{\contentsline {chapter}{Daftar Pustaka}{67}{Item.28}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV.3}Penentuan Rentang Kontrol dari Kapasitas Sistem}{53}{section.4.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {IV.3}Penentuan Rentang Kontrol dari Kapasitas Sistem}{53}{section.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.3.1}Pengukuran Kapasitas (\emph {Capacity Benchmark})}{53}{subsection.4.3.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.3.1}Pengukuran Kapasitas (\emph {Capacity Benchmark})}{53}{subsection.4.3.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.1}{\ignorespaces Hasil pengukuran \emph {throughput} dan utilisasi CPU per level \emph {batch size}}}{53}{table.caption.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.3.2}Penentuan Rentang \emph {Batch Size}}{54}{subsection.4.3.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.3.2}Penentuan Rentang \emph {Batch Size}}{54}{subsection.4.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.3.3}Penentuan Rentang \emph {Poll Interval}}{54}{subsection.4.3.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.3.3}Penentuan Rentang \emph {Poll Interval}}{54}{subsection.4.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.3.4}Penetapan Titik Operasional Nominal ($u_{\text {nom}}$)}{55}{subsection.4.3.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.3.4}Penetapan Titik Operasional Nominal ($u_{\text {nom}}$)}{55}{subsection.4.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV.4}Eksperimen Open-Loop dan Identifikasi Sistem}{55}{section.4.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {IV.4}Eksperimen Open-Loop dan Identifikasi Sistem}{55}{section.4.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.4.1}Prosedur Eksperimen}{55}{subsection.4.4.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.4.1}Prosedur Eksperimen}{55}{subsection.4.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.4.2}Kualitas Model Identifikasi}{56}{subsection.4.4.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.4.2}Kualitas Model Identifikasi}{56}{subsection.4.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.2}{\ignorespaces Kualitas fit model state-space per variabel}}{56}{table.caption.16}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.4.3}Koreksi Matriks B dari Data Kapasitas}{57}{subsection.4.4.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.4.3}Koreksi Matriks B dari Data Kapasitas}{57}{subsection.4.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV.5}Rancangan Matriks Biaya LQR}{58}{section.4.5}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {IV.5}Rancangan Matriks Biaya LQR}{58}{section.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.1}Matriks R (Penalti Usaha Kontrol)}{58}{subsection.4.5.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.1}Matriks R (Penalti Usaha Kontrol)}{58}{subsection.4.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.2}Matriks Q (Penalti Deviasi State)}{58}{subsection.4.5.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.2}Matriks Q (Penalti Deviasi State)}{58}{subsection.4.5.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.3}{\ignorespaces Preset matriks $Q$ dan motivasi perancangan}}{59}{table.caption.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.3}State Target dan Titik Nominal Kontrol}{59}{subsection.4.5.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.3}State Target dan Titik Nominal Kontrol}{59}{subsection.4.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.4}{\ignorespaces State target dan justifikasi pemilihan}}{59}{table.caption.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.5.4}Normalisasi untuk Ruang Kerja LQR}{60}{subsection.4.5.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.5.4}Normalisasi untuk Ruang Kerja LQR}{60}{subsection.4.5.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.5}{\ignorespaces Normalisasi LQR (di-\emph {override} dari sysid ke rentang \emph {closed-loop})}}{60}{table.caption.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV.6}Rancangan Kontroler ANN Berbasis MLE}{61}{section.4.6}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {IV.6}Rancangan Kontroler ANN Berbasis MLE}{61}{section.4.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.1}Motivasi Penggunaan ANN sebagai Pembanding}{61}{subsection.4.6.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.1}Motivasi Penggunaan ANN sebagai Pembanding}{61}{subsection.4.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.2}Model \emph {Throughput} dari Data Kapasitas}{61}{subsection.4.6.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.2}Model \emph {Throughput} dari Data Kapasitas}{61}{subsection.4.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.3}Kebijakan Boltzmann dan Label Pelatihan}{62}{subsection.4.6.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.3}Kebijakan Boltzmann dan Label Pelatihan}{62}{subsection.4.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.4}Arsitektur dan Pelatihan ANN}{62}{subsection.4.6.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.4}Arsitektur dan Pelatihan ANN}{62}{subsection.4.6.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV.7}Hasil Eksperimen Closed-Loop}{63}{section.4.7}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {IV.7}Hasil Eksperimen Closed-Loop}{63}{section.4.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.7.1}Metrik Evaluasi: Fungsi Biaya $J$}{63}{subsection.4.7.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.7.1}Metrik Evaluasi: Fungsi Biaya $J$}{63}{subsection.4.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.7.2}Perbandingan Fungsi Biaya}{64}{subsection.4.7.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.7.2}Perbandingan Fungsi Biaya}{64}{subsection.4.7.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.6}{\ignorespaces Nilai rata-rata fungsi biaya $J$ per kontroler dan preset Q}}{64}{table.caption.20}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.1}{\ignorespaces Regret ternormalisasi tiap kontroler terhadap biaya terbaik pada preset Q1}}{64}{figure.caption.21}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.2}{\ignorespaces Fungsi biaya $J$ per pola beban untuk setiap kontroler (preset Q1)}}{65}{figure.caption.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.7.3}Analisis Skenario Beban Step}{65}{subsection.4.7.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.7.3}Analisis Skenario Beban Step}{65}{subsection.4.7.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.7}{\ignorespaces Perbandingan metrik pada skenario beban \emph {step}}}{65}{table.caption.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.7.4}Analisis Konsistensi Output Kontroler}{66}{subsection.4.7.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.7.4}Analisis Konsistensi Output Kontroler}{66}{subsection.4.7.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.3}{\ignorespaces Timeseries panjang antrean per kontroler pada lima pola beban (preset Q1)}}{67}{figure.caption.24}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.4}{\ignorespaces Timeseries \emph {batch size} per kontroler pada lima pola beban (preset Q1)}}{68}{figure.caption.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.7.5}Dekomposisi Biaya}{68}{subsection.4.7.5}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.7.5}Dekomposisi Biaya}{68}{subsection.4.7.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.5}{\ignorespaces Dekomposisi biaya $J$ per komponen state untuk setiap kontroler (preset Q1)}}{69}{figure.caption.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV.8}Diskusi}{69}{section.4.8}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {IV.8}Diskusi}{69}{section.4.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.8.1}Karakteristik ANN-MLE sebagai Pembanding}{69}{subsection.4.8.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.8.1}Karakteristik ANN-MLE sebagai Pembanding}{69}{subsection.4.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.8.2}Keterbatasan dan Arah Pengembangan}{70}{subsection.4.8.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.8.2}Keterbatasan dan Arah Pengembangan}{70}{subsection.4.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV.9}Eksperimen Lanjutan: Perbaikan LQR dan Variasi Sumber Daya}{70}{section.4.9}\protected@file@percent }
+\@writefile{atoc}{\contentsline {section}{\numberline {IV.9}Eksperimen Lanjutan: Perbaikan LQR dan Variasi Sumber Daya}{70}{section.4.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.9.1}Permasalahan pada Implementasi LQR}{70}{subsection.4.9.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.9.1}Permasalahan pada Implementasi LQR}{70}{subsection.4.9.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {IV.9.1.1}Tanda Elemen Matriks B yang Salah}{70}{subsubsection.4.9.1.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {IV.9.1.1}Tanda Elemen Matriks B yang Salah}{70}{subsubsection.4.9.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {IV.9.1.2}Ukuran Matriks A yang Tidak Sesuai}{71}{subsubsection.4.9.1.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {IV.9.1.2}Ukuran Matriks A yang Tidak Sesuai}{71}{subsubsection.4.9.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {IV.9.1.3}Nilai Normalisasi Antrean yang Terlalu Besar}{71}{subsubsection.4.9.1.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {IV.9.1.3}Nilai Normalisasi Antrean yang Terlalu Besar}{71}{subsubsection.4.9.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.9.2}Hasil Eksperimen Ulang pada Sumber Daya 1$\times $}{72}{subsection.4.9.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.9.2}Hasil Eksperimen Ulang pada Sumber Daya 1$\times $}{72}{subsection.4.9.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.8}{\ignorespaces Nilai rata-rata fungsi biaya $J$ setelah perbaikan LQR (sumber daya 1$\times $)}}{72}{table.caption.27}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.9.3}Hasil Eksperimen pada Sumber Daya 2$\times $}{72}{subsection.4.9.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.9.3}Hasil Eksperimen pada Sumber Daya 2$\times $}{72}{subsection.4.9.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.9}{\ignorespaces Nilai rata-rata fungsi biaya $J$ pada sumber daya 2$\times $}}{73}{table.caption.28}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.10}{\ignorespaces Perbandingan perilaku kontroler pada skenario \emph {step} (sumber daya 2$\times $)}}{74}{table.caption.29}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.9.4}Perbandingan \emph {Robustness} Kontroler pada Dua Konfigurasi Sumber Daya}{74}{subsection.4.9.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.9.4}Perbandingan \emph {Robustness} Kontroler pada Dua Konfigurasi Sumber Daya}{74}{subsection.4.9.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.11}{\ignorespaces Perbandingan \emph {regret} rata-rata pada dua konfigurasi sumber daya}}{74}{table.caption.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{Daftar Pustaka}{74}{table.caption.30}\protected@file@percent }
+\@writefile{atoc}{\contentsline {chapter}{Daftar Pustaka}{74}{table.caption.30}\protected@file@percent }
 \@writefile{toc}{\contentsfinish }
 \@writefile{atoc}{\contentsfinish }
 \@writefile{lof}{\contentsfinish }
