@@ -127,7 +127,13 @@ J = \sum_{t=0}^{\infty} \left( x_t^T Q x_t + u_t^T R u_t \right)
 \label{eq:fungsi-biaya}
 \end{equation}
 
-Komponen pertama dari fungsi biaya memberikan penalti terhadap deviasi kondisi sistem dari keadaan yang diinginkan, sementara komponen kedua memberikan penalti terhadap besarnya aksi kontrol yang diterapkan.
+Pada setiap langkah waktu $t$, vektor state $x_t$ berisi kondisi aktual sistem, misalnya jumlah backlog, utilisasi CPU, utilisasi memori, dan latensi saat itu.
+Masing-masing komponen $x_t$ dikuadratkan dan dikalikan dengan bobot yang ditetapkan di matriks $Q$.
+Jika backlog saat ini adalah 3.000 dan target adalah 0, maka backlog berkontribusi pada biaya sebesar $3000^2 \times Q[\text{backlog}]$.
+Hal yang sama berlaku untuk setiap variabel state lainnya.
+Secara bersamaan, aksi kontrol yang diterapkan ($u_t$, yaitu batch size dan poll interval yang dipilih) juga dihitung biayanya melalui matriks $R$, agar sistem tidak mengambil tindakan yang terlalu ekstrem.
+Nilai dari kedua komponen ini dijumlahkan untuk setiap langkah waktu, dan total akumulasinya itulah yang membentuk $J$.
+Komponen pertama dari fungsi biaya dengan demikian memberikan penalti terhadap deviasi kondisi sistem dari keadaan yang diinginkan, sementara komponen kedua memberikan penalti terhadap besarnya aksi kontrol yang diterapkan.
 Dengan formulasi ini, sistem tidak hanya diarahkan untuk mengurangi backlog atau utilisasi sumber daya, tetapi juga menghindari perubahan parameter sinkronisasi yang terlalu agresif atau terlalu lambat.
 
 Makna optimal dalam kerangka LQR didefinisikan sebagai keputusan kontrol yang meminimalkan fungsi biaya tersebut sepanjang horizon waktu, sehingga menghasilkan kompromi terbaik antara perbaikan kondisi sistem dan besarnya perubahan parameter sinkronisasi.
@@ -187,15 +193,6 @@ Sinyal kesalahan dihitung sebagai selisih antara nilai backlog aktual dan nilai 
 
 Parameter $K_p$, $K_i$, dan $K_d$ ditentukan melalui metode tuning berdasarkan data eksperimen open-loop.
 PID berfungsi sebagai representasi pendekatan kontrol klasik yang sudah mapan, dengan keterbatasan utama pada sifat SISO yang hanya mengamati satu variabel state dan mengendalikan satu variabel kontrol, tanpa memperhitungkan trade-off multi-variabel secara eksplisit.
-
-\subsubsection{Kontrol Berbasis Jaringan Saraf Tiruan (ANN)}
-
-Pendekatan berbasis ANN digunakan sebagai representasi pendekatan data-driven yang mempelajari kebijakan kontrol langsung dari data tanpa memerlukan model eksplisit dinamika sistem.
-Jaringan saraf tiruan dilatih menggunakan data dari eksperimen open-loop, dengan input berupa vektor state $\mathbf{x} = [n, c, m, o]^T$ dan target output berupa aksi kontrol optimal $u^*(t) = [b, p]^T$ yang telah didefinisikan pada Persamaan~\ref{eq:aksi-optimal}.
-
-Arsitektur jaringan menggunakan beberapa lapisan tersembunyi (\emph{hidden layers}) dengan fungsi aktivasi nonlinier.
-Proses pelatihan dilakukan dengan meminimalkan kesalahan antara output jaringan dan aksi kontrol optimal pada data pelatihan.
-Pendekatan ini berfungsi sebagai pembanding untuk menilai apakah pendekatan berbasis data yang fleksibel mampu menghasilkan kinerja yang lebih baik dibandingkan pendekatan berbasis model seperti LQR, meskipun tanpa jaminan formal mengenai stabilitas dan optimalitas.
 
 \section{Rancangan Solusi}
 
@@ -320,7 +317,6 @@ Kontrol statik menggunakan nilai batch size dan poll interval yang ditetapkan be
 Kontrol berbasis aturan menggunakan sekumpulan aturan threshold yang dirancang berdasarkan hubungan antar variabel yang teramati pada eksperimen open-loop, dengan batas threshold ditentukan dari distribusi nilai variabel state selama eksperimen.
 Kontrol PID dikonfigurasi sebagai kontroler single-loop pada variabel backlog, dengan parameter $K_p$, $K_i$, dan $K_d$ ditentukan melalui metode tuning berbasis data eksperimen open-loop.
 Kontrol LQR menggunakan matriks $A$ dan $B$ yang diidentifikasi dari eksperimen open-loop, serta matriks $Q$ dan $R$ yang mencerminkan prioritas pengendalian yang telah ditetapkan pada Persamaan~\ref{eq:fungsi-biaya}.
-Kontrol berbasis ANN menggunakan jaringan yang dilatih dari data eksperimen open-loop dengan target aksi kontrol optimal $u^*(t)$ yang telah didefinisikan pada Persamaan~\ref{eq:aksi-optimal}.
 
 Setiap metode dijalankan pada keempat skenario beban (step, ramp, impulse, dan step periodik) dengan durasi eksperimen yang sama.
 Hasil eksperimen dievaluasi menggunakan seluruh metrik yang telah didefinisikan pada bagian III.5, sehingga perbandingan mencakup aspek kinerja sinkronisasi, dinamika kontrol, efisiensi pemrosesan, dan biaya kontrol.
@@ -542,7 +538,7 @@ R = \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix} = I
 
 \noindent sehingga variasi hanya terjadi pada bobot state dan perbedaan nilai $J$ antar konfigurasi murni mencerminkan pengaruh prioritas pengendalian.
 
-Pada setiap konfigurasi, nilai fungsi biaya $J$ dihitung untuk seluruh lima metode pengendalian, yaitu kontrol statik, rule-based, PID, LQR, dan ANN, menggunakan data trajectory yang sama dari hasil eksperimen. Dengan demikian, perbedaan nilai $J$ antar metode pada suatu konfigurasi mencerminkan perbedaan kinerja, bukan perbedaan data.
+Pada setiap konfigurasi, nilai fungsi biaya $J$ dihitung untuk seluruh empat metode pengendalian, yaitu kontrol statik, rule-based, PID, dan LQR, menggunakan data trajectory yang sama dari hasil eksperimen. Dengan demikian, perbedaan nilai $J$ antar metode pada suatu konfigurasi mencerminkan perbedaan kinerja, bukan perbedaan data.
 
 Untuk memperoleh ukuran perbandingan yang tidak bergantung pada skala absolut nilai $J$, digunakan \emph{normalized regret}. Pada setiap konfigurasi $k$, nilai fungsi biaya metode $i$ dinormalisasi terhadap metode dengan nilai $J$ terendah pada konfigurasi tersebut:
 

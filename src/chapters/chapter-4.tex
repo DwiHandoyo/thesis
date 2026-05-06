@@ -1,7 +1,7 @@
 \chapter{Eksperimen dan Analisis}
 
 Bab ini memaparkan seluruh tahapan eksperimen yang dilakukan, mulai dari perancangan rentang kontrol,
-identifikasi sistem, pelatihan model ANN, hingga evaluasi perbandingan performa kontroler dalam
+identifikasi sistem, hingga evaluasi perbandingan performa kontroler dalam
 skenario \emph{closed-loop}.
 Setiap keputusan perancangan disertai justifikasi kuantitatif dari data eksperimen.
 
@@ -54,7 +54,7 @@ Pertama, bagaimana rentang operasional yang tepat untuk parameter kontrol berdas
 yang terukur, bukan berdasarkan heuristik intuitif.
 Kedua, apakah dinamika sinkronisasi CQRS dapat dimodelkan cukup baik untuk mendukung rancangan
 kontroler berbasis model.
-Ketiga, seberapa efektif LQR dibandingkan kontroler lain (berbasis aturan, PID, dan ANN) dalam
+Ketiga, seberapa efektif LQR dibandingkan kontroler lain (berbasis aturan dan PID) dalam
 menjaga antrean tetap rendah pada berbagai pola beban.
 Keempat, bagaimana setiap kontroler berperilaku pada skenario beban yang berbeda dan apa yang
 membedakan konsistensi masing-masing.
@@ -423,105 +423,14 @@ Dengan normalisasi ini, kesalahan antrean 5.000 dalam ruang normalisasi bernilai
 $5.000 / 5.000 = 1{,}0$ (satu standar deviasi), menghasilkan aksi koreksi \emph{batch} yang
 proporsional dengan kebutuhan aktual.
 
-\section{Rancangan Kontroler ANN Berbasis MLE}
-
-\subsection{Motivasi Penggunaan ANN sebagai Pembanding}
-
-ANN diikutsertakan dalam eksperimen sebagai kontroler pembanding berbasis data untuk melihat
-apakah pendekatan yang tidak bergantung pada model state-space linier dapat memberikan hasil
-yang sebanding atau lebih baik dalam kondisi tertentu.
-
-Pendekatan yang dipilih adalah \emph{Maximum Likelihood Estimation} (MLE) berbasis
-\emph{Boltzmann distribution}, di mana ANN dilatih langsung dari data \emph{capacity benchmark}
-tanpa menggunakan LQR sebagai acuan pelatihan.
-
-\subsection{Model \emph{Throughput} dari Data Kapasitas}
-
-Untuk mengevaluasi biaya setiap tindakan kontrol dalam ruang fisik (bukan ruang model sysid yang
-tidak reliabel untuk kanal antrean), dibangun model \emph{throughput} empiris dari data
-\emph{capacity benchmark}:
-
-\begin{equation}
-\text{tput}(\text{batch}, \text{poll}) = \text{tput\_max}(\text{batch}) \times \min\!\left(1,\; \frac{t_{\text{fetch}}}{\text{poll}}\right)
-\end{equation}
-
-Suku pertama, $\text{tput\_max}(\text{batch})$, diinterpolasi secara linier dari data
-Tabel~\ref{tab:capacity-benchmark}.
-Suku kedua, $\min(1,\; t_{\text{fetch}} / \text{poll})$, adalah efisiensi \emph{polling}:
-jika \emph{poll} $< t_{\text{fetch}}$, setiap siklus selesai sebelum data tersedia
-sehingga sebagian kapasitas terbuang.
-Jika \emph{poll} $\geq t_{\text{fetch}}$, setiap siklus menemukan data dengan peluang tinggi
-sehingga efisiensi = 1,0.
-
-Dengan model ini, prediksi \emph{one-step forward} dilakukan sebagai:
-
-\begin{align}
-q_{k+1} &= \max\!\left(0,\; q_k - \text{tput}(\text{batch}, \text{poll}) \cdot \Delta t\right) \\
-\text{cpu}_{k+1} &= \text{cpu\_at\_benchmark}(\text{batch})
-\end{align}
-
-Fungsi $\text{cpu\_at\_benchmark}(\cdot)$ diinterpolasi dari kolom CPU pada
-Tabel~\ref{tab:capacity-benchmark}.
-Variabel memori dan I/O dianggap konstan (uncontrolled) dalam prediksi satu langkah.
-
-\subsection{Kebijakan Boltzmann dan Label Pelatihan}
-
-Untuk setiap pasangan (state, Q), fungsi biaya $J$ dievaluasi pada seluruh grid tindakan
-$\mathcal{U}$ berukuran $15 \times 15 = 225$ titik (15 level \emph{batch} dan 15 level \emph{inv\_poll},
-spasi logaritmik dalam rentang dari \emph{capacity benchmark}):
-
-\begin{equation}
-J(\mathbf{x}, \mathbf{u}, Q) = (\mathbf{x}_{k+1} - \mathbf{x}^*)^\top Q (\mathbf{x}_{k+1} - \mathbf{x}^*) + (\mathbf{u} - \mathbf{u}_{\text{nom}})^\top R (\mathbf{u} - \mathbf{u}_{\text{nom}})
-\end{equation}
-
-Label target $\mathbf{u}^*$ kemudian dihitung sebagai nilai ekspektasi dari distribusi Boltzmann:
-
-\begin{equation}
-\mathbf{u}^*(\mathbf{x}, Q) = \sum_{\mathbf{u} \in \mathcal{U}} P(\mathbf{u} \mid \mathbf{x}, Q) \cdot \mathbf{u},
-\quad P(\mathbf{u} \mid \mathbf{x}, Q) = \text{softmax}\!\left(\frac{-J(\mathbf{x}, \mathbf{u}, Q)}{T \cdot \Delta J}\right)
-\end{equation}
-
-dengan $T = 0{,}1$ (parameter selektivitas) dan $\Delta J = \max J - \min J$ (normalisasi rentang
-biaya agar $T$ tidak bergantung pada skala absolut $J$).
-
-Nilai ekspektasi Boltzmann memiliki beberapa keunggulan dibanding \emph{argmin} biasa:
-\begin{enumerate}
-\item Menghasilkan aksi yang halus karena merupakan rata-rata berbobot, bukan pilihan ekstrem.
-\item Memperhitungkan ketidakpastian di sekitar optimum lokal.
-\item Konsisten dengan prinsip \emph{maximum entropy} pada area dengan biaya serupa.
-\end{enumerate}
-
-\subsection{Arsitektur dan Pelatihan ANN}
-
-ANN dilatih sebagai fungsi $\hat{\mathbf{u}} = f([\log_{10}(\text{diag}(Q) + 10^{-3}),\; \mathbf{x}_{\text{norm}}])$,
-dengan dimensi input 8 (4 diagonal Q + 4 variabel state).
-Bobot Q dimasukkan sebagai log-transformasi untuk mengkompres rentang yang sangat lebar
-(dari 0,1 hingga 1000).
-
-Arsitektur jaringan: $8 \to 128 \to 128 \to 2$ dengan aktivasi ReLU pada lapisan tersembunyi
-dan keluaran linier.
-Pelatihan menggunakan MSE loss biasa (tidak berbobot), karena label $\mathbf{u}^*$ sudah
-mengandung informasi optimal melalui ekspektasi Boltzmann.
-Optimiser Adam, $\text{lr} = 10^{-3}$, 300 epoch, dengan split validasi 10\%.
-
-Satu model yang sama melayani seluruh preset Q (Q1, Q2, Q3) serta 20 Q acak yang digunakan
-selama pelatihan untuk memperkuat generalisasi.
-Pada saat inferensi, Q dimasukkan sesuai konfigurasi yang dipilih, sehingga satu bobot jaringan
-menghasilkan kebijakan yang berbeda untuk setiap Q.
-
-Data pelatihan berjumlah 12.627 pasang state--label, yang terdiri dari 122 langkah
-\emph{open-loop} dikali 23 preset Q (3 tetap + 20 acak), ditambah augmentasi 427 sampel pada
-state \emph{high-queue} (persentil ke-50 ke atas) untuk memperbaiki cakupan di area yang paling
-relevan.
-
 \section{Hasil Eksperimen Closed-Loop}
 
 Eksperimen \emph{closed-loop} menghasilkan total~\closedloopsamples{}
-sampel dari 45 percobaan (9 kontroler $\times$ 5 pola beban $\times$ 1 pengulangan).
-Kontroler yang diuji adalah: Statik, Rule-Based, State-Feedback (penempatan kutub), LQR-Q1,
-LQR-Q2, LQR-Q3, ANN-Q1, ANN-Q2, dan ANN-Q3.
+sampel dari 30 percobaan (6 kontroler $\times$ 5 pola beban $\times$ 1 pengulangan).
+Kontroler yang diuji adalah Statik, Rule-Based, State-Feedback (penempatan kutub), LQR-Q1,
+LQR-Q2, dan LQR-Q3.
 Kontroler Statik, Rule-Based, dan State-Feedback tidak bergantung pada Q dalam menentukan
-aksi kontrol; namun fungsi biaya $J$ mereka dievaluasi terhadap ketiga preset Q untuk
+aksi kontrol, namun fungsi biaya $J$ mereka dievaluasi terhadap ketiga preset Q untuk
 keperluan perbandingan.
 
 \subsection{Metrik Evaluasi: Fungsi Biaya $J$}
@@ -556,8 +465,6 @@ sehingga $r = 0$ berarti kontroler terbaik dan $r > 0$ berarti lebih tinggi dari
     \hline
     PID & 443 & 603 & 698 & 0,146 \\
     \hline
-    ANN & 384 & 649 & 750 & 0,143 \\
-    \hline
     \textbf{LQR} & \textbf{349} & \textbf{584} & \textbf{614} & \textbf{0,000} \\
     \hline
     \end{tabular}
@@ -565,7 +472,7 @@ sehingga $r = 0$ berarti kontroler terbaik dan $r > 0$ berarti lebih tinggi dari
 
 LQR menghasilkan biaya terendah di seluruh preset Q dengan \emph{regret} 0,000.
 Pada Q1, LQR (349) lebih baik dari PID (443) sebesar 21\% dan dari statik (477) sebesar 27\%.
-ANN berada di urutan kedua dengan \emph{regret} rata-rata 0,143, diikuti PID (0,146).
+PID berada di urutan kedua dengan \emph{regret} rata-rata 0,146.
 
 \begin{figure}[H]
     \centering
@@ -601,12 +508,6 @@ untuk membandingkan responsivitas kontroler.
     \hline
     PID         & 339 & 2.053 & 268 & 400 \\
     \hline
-    ANN-Q1      & 324 & 1.714 & 277 & 418 \\
-    \hline
-    ANN-Q2      & 306 & 1.783 & 249 & 394 \\
-    \hline
-    ANN-Q3      & 296 & 1.810 & 270 & 395 \\
-    \hline
     \textbf{LQR-Q1} & \textbf{650} & \textbf{1.702} & \textbf{404} & \textbf{164} \\
     \hline
     \textbf{LQR-Q2} & \textbf{649} & \textbf{1.815} & \textbf{327} & \textbf{154} \\
@@ -618,8 +519,6 @@ untuk membandingkan responsivitas kontroler.
 
 LQR memilih \emph{batch} terbesar (609--650) dengan \emph{poll interval} terendah (158--164~ms),
 menghasilkan \emph{throughput} 404--442~msg/s atau hampir dua kali lipat dibanding statik (226~msg/s).
-ANN menggunakan \emph{batch} yang lebih kecil (296--324) dengan \emph{poll interval} lebih panjang,
-sehingga \emph{throughput}-nya lebih rendah (270--277~msg/s).
 
 LQR merespons secara langsung terhadap besarnya antrean melalui persamaan
 $\mathbf{u}_k = \mathbf{u}_{\text{nom}} - K (\mathbf{x}_k - \mathbf{x}^*)$,
@@ -630,19 +529,14 @@ untuk memaksimalkan frekuensi pengambilan data dari Kafka.
 
 Perbedaan konsistensi antar kontroler tampak jelas pada timeseries \emph{batch size}.
 
-\textbf{LQR} menunjukkan pola reaktif yang jelas: \emph{batch} naik saat antrean meningkat
+\textbf{LQR} menunjukkan pola reaktif yang jelas, di mana \emph{batch} naik saat antrean meningkat
 dan turun saat antrean mereda.
 Pola ini konsisten karena gain $K$ yang bersifat statis bereaksi langsung terhadap error antrean
 pada setiap langkah waktu.
 Pada skenario \emph{step}, LQR menggunakan \emph{batch} rata-rata 650 (Q1) dengan variasi
 yang cukup besar mengikuti dinamika antrean.
 
-\textbf{ANN} menunjukkan tren yang lebih halus namun dengan \emph{batch} rata-rata yang lebih
-kecil (296--324 pada skenario \emph{step}).
-ANN mempertimbangkan kombinasi seluruh state dan nilai Q sekaligus, bukan hanya bereaksi
-terhadap satu sinyal, sehingga respons \emph{batch}-nya lebih moderat.
-
-\textbf{Rule-Based} menunjukkan perilaku inkremental yang stabil namun lambat:
+\textbf{Rule-Based} menunjukkan perilaku inkremental yang stabil namun lambat,
 \emph{batch} naik 50 setiap kali antrean melewati ambang batas, dan turun 50 setiap kali CPU
 melampaui 47\%.
 Ambang batas ini diturunkan dari \emph{capacity benchmark}:
@@ -686,40 +580,15 @@ antrean dapat dilakukan.
 
 \section{Diskusi}
 
-\subsection{Karakteristik ANN-MLE sebagai Pembanding}
-
-Ada beberapa karakteristik ANN-MLE yang membedakannya dari LQR dan menjadi alasan
-penggunaannya sebagai kontroler pembanding.
-
-\begin{enumerate}
-\item \textbf{Tidak bergantung pada asumsi linearitas.}
-LQR menurunkan gain $K$ dari model state-space linier, sementara ANN dilatih langsung
-dari data \emph{capacity benchmark} sehingga secara implisit dapat menangkap hubungan
-non-linear antara \emph{batch size} dan \emph{throughput}.
-
-\item \textbf{Label berbasis kebijakan Boltzmann.}
-Label pelatihan diturunkan dari ekspektasi kebijakan Boltzmann atas model \emph{throughput}
-empiris, yang menghasilkan aksi yang lebih halus dibanding pemilihan aksi terbaik tunggal.
-
-\item \textbf{Satu model untuk semua Q.}
-ANN universal menerima diagonal Q sebagai bagian input, sehingga satu bobot jaringan melayani
-seluruh konfigurasi prioritas tanpa perlu melatih ulang.
-\end{enumerate}
-
 \subsection{Keterbatasan dan Arah Pengembangan}
 
 \begin{enumerate}
-\item Model \emph{throughput} untuk pelatihan ANN mengasumsikan bahwa \emph{throughput} antar
-percobaan tetap konstan (tidak bergantung pada kondisi Elasticsearch yang berubah seperti
-\emph{segment merge} atau tekanan \emph{heap}).
-Dalam praktik, \emph{throughput} bervariasi, sehingga model perlu diperbarui secara berkala.
-
 \item Eksperimen dilakukan dalam satu kali percobaan per kombinasi.
 Replikasi diperlukan untuk mengkonfirmasi signifikansi statistik dari perbedaan yang teramati.
 
 \item Portabilitas ke perangkat keras yang berbeda memerlukan pengukuran ulang kapasitas
-(\emph{capacity benchmark}), normalisasi operasional, dan kemungkinan pelatihan ulang ANN.
-Namun prosedur ini hanya memerlukan waktu sekitar 30 menit---jauh lebih singkat dibanding
+(\emph{capacity benchmark}) dan normalisasi operasional.
+Prosedur ini hanya memerlukan waktu sekitar 30 menit, jauh lebih singkat dibanding
 identifikasi sistem penuh (\emph{open-loop sysid}).
 \end{enumerate}
 
@@ -816,8 +685,6 @@ yaitu 1 CPU, 1.024 MB RAM, dan JVM heap 512 MB.
     \hline
     PID              & 443 & 603 & 698 & 0,146 \\
     \hline
-    ANN (MLE)        & 384 & 649 & 750 & 0,143 \\
-    \hline
     \textbf{LQR}     & \textbf{349} & \textbf{584} & \textbf{614} & \textbf{0,000} \\
     \hline
     \end{tabular}
@@ -827,7 +694,7 @@ LQR menghasilkan biaya terendah pada seluruh preset Q.
 Pada skenario \emph{step}, LQR memilih \emph{batch} rata-rata 609 hingga 650 dari nominal 250,
 dengan \emph{poll interval} 154 hingga 168~ms, dan menghasilkan \emph{throughput} 404 hingga
 442~msg/s atau hampir dua kali lipat dibanding statik (226~msg/s).
-ANN dan PID berada di urutan berikutnya dengan \emph{regret} masing-masing 0,143 dan 0,146.
+PID berada di urutan berikutnya dengan \emph{regret} 0,146.
 
 Detail perilaku kontroler pada skenario \emph{step} dapat dilihat pada
 Tabel~\ref{tab:result-step}.
@@ -838,7 +705,6 @@ Eksperimen diulang dengan sumber daya dua kali lipat, yaitu 2 CPU, 2.048 MB RAM,
 dan JVM heap 1.024 MB, untuk melihat apakah kontroler tetap bekerja dengan baik
 pada kapasitas sistem yang berbeda.
 Eksperimen ini menggunakan run \texttt{closed\_loop\_20260423\_083031} (1.871 sampel).
-Model ANN tidak dilatih ulang untuk menguji portabilitas model pada kondisi yang berbeda.
 
 \begin{table}[H]
     \centering
@@ -854,8 +720,6 @@ Model ANN tidak dilatih ulang untuk menguji portabilitas model pada kondisi yang
     Rule-Based       & 787 & 1.150 & 1.292 & 1,342 \\
     \hline
     PID              & 410 & 570 & 653 & 0,185 \\
-    \hline
-    ANN (MLE)        & 514 & 714 & 634 & 0,380 \\
     \hline
     \textbf{LQR}     & \textbf{375} & \textbf{424} & \textbf{584} & \textbf{0,000} \\
     \hline
@@ -877,13 +741,10 @@ LQR yang hanya 491.
 Dengan 2 CPU, Elasticsearch dapat memproses lebih banyak pesan per siklus, tetapi
 statik tidak menyesuaikan parameternya sehingga kapasitas tambahan tidak dimanfaatkan.
 
-\textbf{ANN memberikan hasil yang lebih rendah dibanding konfigurasi sebelumnya.}
-Regret ANN naik dari 0,143 pada konfigurasi 1 CPU menjadi 0,380 pada 2 CPU.
-Hal ini terjadi karena model ANN dilatih menggunakan data kapasitas dari konfigurasi
-1 CPU, sehingga model tidak mencerminkan kondisi saat CPU bertambah.
-LQR tidak mengalami masalah yang sama karena nilai $B[\text{queue}, \text{batch}]$
-mencerminkan perubahan relatif antrean terhadap perubahan \emph{batch}, bukan nilai
-kapasitas absolut, sehingga LQR tetap dapat bekerja meskipun kapasitas sistem berubah.
+\textbf{LQR tetap dapat menyesuaikan diri dengan kapasitas yang berbeda.}
+Nilai $B[\text{queue}, \text{batch}]$ pada LQR mencerminkan perubahan relatif antrean
+terhadap perubahan \emph{batch}, bukan nilai kapasitas absolut, sehingga LQR tetap
+dapat bekerja meskipun kapasitas sistem berubah.
 
 \begin{table}[H]
     \centering
@@ -899,10 +760,6 @@ kapasitas absolut, sehingga LQR tetap dapat bekerja meskipun kapasitas sistem be
     Rule-Based   & 200 & 385 & 2.364 & 285 \\
     \hline
     PID          & 495 & 300 & 1.824 & 294 \\
-    \hline
-    ANN-Q1       & 557 & 303 & 1.971 & 273 \\
-    \hline
-    ANN-Q3       & 371 & 337 & 1.948 & 278 \\
     \hline
     LQR-Q1       & 168 & 640 & 1.676 & 318 \\
     \hline
@@ -928,8 +785,6 @@ kapasitas absolut, sehingga LQR tetap dapat bekerja meskipun kapasitas sistem be
     \hline
     PID          & 0,146 & 0,185 & $+$27\% \\
     \hline
-    ANN (MLE)    & 0,143 & 0,380 & $+$2,66$\times$ \\
-    \hline
     \textbf{LQR} & \textbf{0,000} & \textbf{0,000} & \textbf{tetap} \\
     \hline
     \end{tabular}
@@ -940,7 +795,5 @@ LQR tetap berada pada posisi terbaik di kedua konfigurasi karena gain $K$ yang d
 dari DARE bereaksi terhadap variabel state saat ini.
 Ketika kapasitas sistem bertambah, perubahan tersebut akan tecermin pada pola antrean
 dan LQR menyesuaikan \emph{batch} secara proporsional.
-PID bahkan sedikit membaik karena gain integralnya dapat mengakumulasi error lebih cepat
+PID juga relatif stabil karena gain integralnya dapat mengakumulasi error lebih cepat
 saat sistem lebih responsif.
-ANN, yang tidak dilatih ulang, menunjukkan penurunan performa karena model
-\emph{throughput} yang dipelajarinya tidak lagi sesuai dengan kapasitas sistem yang baru.

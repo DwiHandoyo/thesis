@@ -186,6 +186,14 @@ Di mana:
 \item \(R:\) bobot penalti terhadap usaha pengendalian, berupa matriks definit positif.
 \end{itemize}
 
+Cara kerja fungsi biaya $J$ adalah sebagai berikut.
+Pada setiap langkah waktu $t$, sistem mengukur kondisi aktual melalui vektor state $x_t$ dan membandingkannya dengan kondisi yang diinginkan.
+Selisih ini dikuadratkan dan dikalikan dengan bobot dari matriks $Q$, menghasilkan angka yang merepresentasikan seberapa "buruk" kondisi sistem saat itu.
+Secara paralel, besarnya aksi kontrol $u_t$ yang diterapkan juga dikuadratkan dan dikalikan dengan bobot dari matriks $R$, merepresentasikan "harga" dari tindakan koreksi yang diambil.
+Kedua angka ini dijumlahkan untuk setiap langkah waktu, dan akumulasinya selama horizon waktu yang panjang itulah yang membentuk nilai $J$.
+Semakin kecil $J$, berarti sistem rata-rata berada dekat dengan kondisi yang diinginkan dan tidak banyak "boros" dalam melakukan koreksi.
+LQR kemudian menghitung parameter kontrol yang membuat $J$ sekecil mungkin.
+
 Sebagai gambaran, misalkan dalam sistem sinkronisasi CQRS terdapat dua variabel state yang ingin dijaga, yaitu backlog dan utilisasi CPU.
 Jika matriks Q diberi bobot besar pada komponen backlog dan bobot kecil pada utilisasi CPU, maka sistem akan lebih agresif dalam menekan backlog, meskipun hal tersebut menyebabkan perubahan batch size yang besar dan fluktuasi utilisasi CPU.
 Sebaliknya, jika matriks R diberi bobot besar, sistem akan lebih konservatif dalam mengubah parameter kontrol, sehingga batch size berubah secara perlahan meskipun backlog membutuhkan waktu lebih lama untuk turun.
@@ -222,20 +230,3 @@ Walaupun implementasinya lebih kompleks dibandingkan pendekatan seperti PID, LQR
 Penentuan parameter kontrol pada LQR juga lebih sesuai untuk diterapkan pada kondisi berbasis \emph{trade-off} karena didasarkan pada matriks biaya yang bisa diatur untuk menentukan variabel mana yang akan diunggulkan dibanding yang lain.
 Dengan karakteristik tersebut, LQR sesuai untuk diterapkan pada pengendalian sinkronisasi data yang melibatkan beberapa variabel sekaligus.
 
-\subsection{Pendekatan Berbasis Jaringan Saraf Tiruan}
-
-Selain pendekatan berbasis model seperti PID dan LQR, terdapat pendekatan alternatif yang tidak memerlukan model eksplisit dari sistem yang dikendalikan.
-Jaringan saraf tiruan (\emph{Artificial Neural Network}, ANN) merupakan salah satu pendekatan berbasis data yang mampu mempelajari pemetaan antara kondisi sistem dan aksi kontrol secara langsung dari data observasi, tanpa memerlukan persamaan dinamika sistem secara eksplisit (Haykin, 2009).
-
-Dalam konteks pengendalian, ANN dapat dilatih untuk mengaproksimasi kebijakan kontrol optimal berdasarkan pasangan data input-output yang diperoleh dari eksperimen.
-Input berupa vektor state yang merepresentasikan kondisi sistem pada suatu waktu, dan output berupa aksi kontrol yang menghasilkan kinerja terbaik untuk kondisi tersebut.
-Dengan arsitektur yang memadai dan data pelatihan yang representatif, ANN mampu menangkap hubungan nonlinier antara state dan kontrol yang mungkin tidak tertangkap oleh model linier (Goodfellow dkk., 2016).
-
-Kelebihan utama pendekatan berbasis ANN adalah fleksibilitasnya dalam menangani sistem yang kompleks dan nonlinier tanpa memerlukan asumsi linearitas.
-Selain itu, ANN bersifat MIMO (\emph{Multi-Input Multi-Output}) secara alami, sehingga dapat menerima seluruh variabel state sebagai input dan menghasilkan seluruh variabel kontrol sebagai output secara simultan.
-
-Namun, pendekatan ini memiliki beberapa keterbatasan.
-ANN memerlukan data pelatihan yang cukup dan representatif untuk menghasilkan kebijakan kontrol yang baik.
-Model yang dihasilkan bersifat \emph{black-box}, sehingga sulit untuk menganalisis atau menjamin perilaku kontroler pada kondisi yang belum pernah dijumpai selama pelatihan.
-Selain itu, tidak ada jaminan formal mengenai stabilitas atau optimalitas dari kebijakan kontrol yang dihasilkan, berbeda dengan LQR yang memiliki landasan teori optimasi dan analisis stabilitas (Ogata, 2010).
-Keterbatasan ini menjadikan ANN sebagai pendekatan pembanding yang menarik untuk menilai sejauh mana pendekatan berbasis model (LQR) memberikan keunggulan dibandingkan pendekatan berbasis data pada permasalahan pengendalian sinkronisasi.
