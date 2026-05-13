@@ -215,7 +215,13 @@ u_{t} = - Kx_{t}
 \end{equation}
 
 dengan \emph{K} adalah matriks penguat (gain) yang diperoleh dari penyelesaian persamaan Riccati.
-Matriks ini menunjukkan seberapa besar tindakan korektif yang harus diambil untuk setiap kesalahan yang terdeteksi dalam status sistem.
+Persamaan Riccati adalah persamaan matriks yang muncul dari proses optimasi fungsi biaya
+kuadratik dan menjadi cara matematis baku untuk menghitung gain $K$ pada sistem yang dimodelkan
+dengan \emph{state-space}.
+Pada sistem waktu diskrit seperti pada penelitian ini, persamaan tersebut dikenal sebagai
+\emph{Discrete Algebraic Riccati Equation} (DARE).
+Matriks $K$ menunjukkan seberapa besar tindakan korektif yang harus diambil untuk setiap
+kesalahan yang terdeteksi dalam status sistem.
 
 Pendekatan LQR cocok digunakan untuk sistem yang kompleks, linear dan bersifat multi input dan multi output (MIMO).
 Dalam sistem sinkronisasi yang kompleks, kita mungkin perlu mengontrol beberapa parameter sekaligus seperti batch size dan interval polling.
