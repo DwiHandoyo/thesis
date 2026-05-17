@@ -10,13 +10,11 @@ Setiap keputusan perancangan disertai justifikasi kuantitatif dari data eksperim
 % =============================================================================
 
 % --- Open-loop ---
-\newcommand{\openloopdate}{15 April 2026}
 \newcommand{\openloopsamples}{8146}
 \newcommand{\openloopsteps}{122}
 \newcommand{\openloopinterval}{1}
 
 % --- Capacity benchmark ---
-\newcommand{\capbenchdate}{14 April 2026}
 \newcommand{\tfetchms}{203}
 \newcommand{\batchminCap}{3}
 \newcommand{\batchmaxCap}{2036}
@@ -33,7 +31,6 @@ Setiap keputusan perancangan disertai justifikasi kuantitatif dari data eksperim
 \newcommand{\esversion}{8.10.0}
 
 % --- Closed-loop run ---
-\newcommand{\closedloopdate}{15--16 April 2026}
 \newcommand{\closedlooprun}{closed\_loop\_20260415\_231610}
 \newcommand{\closedloopsamples}{1930}
 
@@ -258,7 +255,15 @@ karena \emph{throughput} proporsional dengan frekuensi \emph{polling}, bukan int
 
 Model state-space $\mathbf{x}_{k+1} = A\mathbf{x}_k + B\mathbf{u}_k$ diestimasi menggunakan
 regresi kuadrat terkecil (\emph{least squares}).
-Kualitas fit diukur menggunakan $R^2$ per variabel state.
+Sebelum estimasi, data difilter untuk membuang fase \emph{settle} (transien antar
+konfigurasi) dan sampel dengan antrean nol (\emph{queue exhausted}).
+Data tersisa dibagi menjadi 80\% sebagai data training dan 20\% sebagai data uji, dengan
+pembagian dilakukan per kombinasi parameter \emph{(batch, poll)} untuk mencegah kebocoran
+temporal antar himpunan.
+Matriks $A$ dan $B$ kemudian diestimasi dari data training, dan kualitas fit ($R^2$) dihitung
+pada data tersebut (\emph{in-sample fit}).
+Nilai $R^2$ merepresentasikan seberapa baik model linier $A\mathbf{x}_k + B\mathbf{u}_k$
+menjelaskan transisi state pada data training.
 
 \begin{table}[H]
     \centering
@@ -269,13 +274,13 @@ Kualitas fit diukur menggunakan $R^2$ per variabel state.
     \hline
     \textbf{Variabel State} & \textbf{$R^2$} & \textbf{Interpretasi} \\
     \hline
-    Queue length & 0,997 & Sangat baik (mendekati integrator sempurna) \\
+    Queue length & 0,994 & Sangat baik (mendekati integrator sempurna) \\
     \hline
-    Utilisasi CPU & 0,864 & Baik \\
+    Utilisasi CPU & 0,694 & Cukup \\
     \hline
-    Operasi I/O & 0,693 & Cukup \\
+    Operasi I/O & 0,206 & Rendah \\
     \hline
-    Utilisasi memori & 0,056 & Rendah (dinamika didominasi siklus GC JVM, kurang responsif terhadap perubahan batch size dan poll interval) \\
+    Utilisasi memori & 0,316 & Rendah (dinamika didominasi siklus GC JVM, kurang responsif terhadap perubahan batch size dan poll interval) \\
     \hline
     \end{tabular}
 \end{table}
