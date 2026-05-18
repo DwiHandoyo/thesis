@@ -161,16 +161,16 @@
 \@writefile{atoc}{\contentsline {section}{\numberline {IV.6}Hasil Eksperimen Closed-Loop}{62}{section.4.6}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.1}Setup Eksperimen}{62}{subsection.4.6.1}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.1}Setup Eksperimen}{62}{subsection.4.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.2}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{62}{subsection.4.6.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.2}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{62}{subsection.4.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.2}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{63}{subsection.4.6.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.2}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{63}{subsection.4.6.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.3}Hasil Sumber Daya Penuh}{63}{subsection.4.6.3}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.3}Hasil Sumber Daya Penuh}{63}{subsection.4.6.3}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {IV.8}{\ignorespaces Nilai rata-rata fungsi biaya $J$ pada konfigurasi sumber daya penuh}}{63}{table.caption.23}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {IV.2}{\ignorespaces Fungsi biaya $J$ per pola beban pada preset Q1 (sumber daya penuh)}}{64}{figure.caption.24}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {IV.3}{\ignorespaces \emph {Throughput} per kontroler pada preset Q1 (sumber daya penuh)}}{64}{figure.caption.25}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {IV.4}{\ignorespaces \emph {Timeseries} panjang antrean per kontroler pada lima pola beban (preset Q1, sumber daya penuh)}}{65}{figure.caption.26}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Setengah}{65}{subsection.4.6.4}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Setengah}{65}{subsection.4.6.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Setengah}{66}{subsection.4.6.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Setengah}{66}{subsection.4.6.4}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {IV.9}{\ignorespaces Nilai rata-rata fungsi biaya $J$ pada konfigurasi sumber daya setengah}}{66}{table.caption.27}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {IV.5}{\ignorespaces Fungsi biaya $J$ per pola beban pada preset Q1 (sumber daya setengah)}}{66}{figure.caption.28}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {IV.6}{\ignorespaces \emph {Timeseries} panjang antrean per kontroler pada lima pola beban (preset Q1, sumber daya setengah)}}{67}{figure.caption.29}\protected@file@percent }

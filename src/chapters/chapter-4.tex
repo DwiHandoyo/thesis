@@ -556,9 +556,10 @@ proporsional dengan kebutuhan aktual.
 
 Eksperimen \emph{closed-loop} dijalankan pada dua mesin uji dengan seluruh komponen
 sistem berjalan sebagai kontainer Docker.
-Mesin AMD menggunakan laptop dengan spesifikasi AMD Ryzen 7 5800H, RAM 16 GB,
+Mesin AMD menggunakan laptop dengan spesifikasi AMD Ryzen 5 4650U (2{,}1 GHz), RAM 32 GB 3200MHz,
 dan sistem operasi Windows 11.
-Mesin Intel menggunakan laptop dengan spesifikasi %TODO: isi spesifikasi Intel i7 (model, RAM, OS).
+Mesin Intel menggunakan laptop dengan spesifikasi Intel Core i7-1068NG7 (2{,}3 GHz),
+RAM 32 GB 3733 MHz, dan sistem operasi macOS 26.2.
 Kedua mesin menggunakan Docker Desktop dengan konfigurasi sumber daya yang sama per eksperimen.
 Tumpukan komponen meliputi PostgreSQL sebagai \emph{write database}, Kafka dengan Debezium CDC
 sebagai \emph{message broker}, sebuah \emph{message sink} sebagai pengkonsumsi event, dan
@@ -621,16 +622,11 @@ pada masing-masing preset $Q$, beserta \emph{regret} ternormalisasi rata-rata.
     \end{tabular}
 \end{table}
 
-LQR menghasilkan biaya terendah pada seluruh preset $Q$ dengan \emph{regret} 0{,}000.
-PID berada di urutan kedua dengan \emph{regret} rata-rata 0{,}391.
-Statik tertinggal jauh dengan \emph{regret} 2{,}919 karena tidak mampu memanfaatkan
-kapasitas tambahan yang tersedia.
-Pada preset Q1, LQR (3.152) lebih rendah dari PID (4.046) sebesar 22\% dan dari Statik (9.662) sebesar 67\%.
-
-Pemecahan biaya per pola beban pada preset Q1 ditampilkan pada Gambar~\ref{fig:bar-pattern-full}.
-Selisih antar kontroler paling kentara pada pola \emph{step} dan \emph{periodic\_step},
-yaitu kondisi di mana antrean naik secara berkelanjutan sehingga kemampuan kontroler
-menyesuaikan \emph{batch} sangat menentukan.
+LQR menempati posisi terbaik (regret 0) pada seluruh preset $Q$, dengan biaya 22\%
+lebih rendah dari PID dan 67\% lebih rendah dari Statik pada preset Q1.
+Selisih besar terhadap Statik mengonfirmasi bahwa parameter statik tidak mampu memanfaatkan
+kapasitas tambahan yang tersedia, sementara LQR menyesuaikan aksi kontrol terhadap dinamika
+antrean.
 
 \begin{figure}[H]
     \centering
@@ -639,9 +635,9 @@ menyesuaikan \emph{batch} sangat menentukan.
     \label{fig:bar-pattern-full}
 \end{figure}
 
-Throughput per kontroler pada preset Q1 ditunjukkan pada Gambar~\ref{fig:throughput-full}.
-LQR mencapai \emph{throughput} tertinggi pada pola \emph{impulse}, di mana antrean melonjak
-hingga 10.000 dan kontroler perlu mempercepat drainase secara agresif.
+Selisih antar kontroler paling terlihat jelas pada pola \emph{step} dan \emph{ramp},
+di mana antrean naik berkelanjutan sehingga kemampuan menyesuaikan \emph{batch} menjadi
+penentu performa.
 
 \begin{figure}[H]
     \centering
@@ -650,10 +646,9 @@ hingga 10.000 dan kontroler perlu mempercepat drainase secara agresif.
     \label{fig:throughput-full}
 \end{figure}
 
-Gambar~\ref{fig:timeseries-queue-full} menampilkan \emph{timeseries} antrean pada lima pola
-beban dengan preset Q1.
-LQR (warna hijau pada plot) konsisten menjaga antrean lebih rendah dibanding Statik dan
-Rule-Based, terutama pada pola \emph{step} dan \emph{periodic\_step}.
+LQR mencapai \emph{throughput} tertinggi pada pola \emph{impulse}, membuktikan kemampuannya
+mempercepat drainase ketika antrean melonjak ke 10.000 secara mendadak. Pola yang sama
+terlihat lebih lemah pada Statik karena \emph{batch} tetap tidak naik mengikuti lonjakan beban.
 
 \begin{figure}[H]
     \centering
@@ -661,6 +656,11 @@ Rule-Based, terutama pada pola \emph{step} dan \emph{periodic\_step}.
     \caption{\emph{Timeseries} panjang antrean per kontroler pada lima pola beban (preset Q1, sumber daya penuh)}
     \label{fig:timeseries-queue-full}
 \end{figure}
+
+\emph{Timeseries} antrean menegaskan superioritas LQR sebagai kurva paling rendah dan paling
+stabil pada pola \emph{step} dan \emph{periodic\_step}, yaitu kondisi di mana antrean
+membangun terus-menerus sehingga keterlambatan reaksi kontroler langsung terlihat sebagai
+akumulasi backlog.
 
 \subsection{Hasil Sumber Daya Setengah}
 \label{sec:hasil-half}
@@ -688,17 +688,10 @@ Tabel~\ref{tab:cost-J-half} menunjukkan rangkuman fungsi biaya $J$ pada konfigur
     \end{tabular}
 \end{table}
 
-Polanya sama dengan konfigurasi penuh, di mana LQR memberikan biaya terendah.
-Pada konfigurasi setengah, \emph{regret} Rule-Based naik menjadi 1{,}015 dibanding
-konfigurasi penuh yang 1{,}160, yang menunjukkan bahwa aturan ambang batas statis
-semakin kurang efektif saat kapasitas berkurang.
-
-LQR tetap pada posisi terbaik dengan \emph{regret} 0{,}000 dan mampu menyesuaikan
-\emph{batch} secara proporsional terhadap kondisi antrean meski kapasitas lebih kecil.
-
-Gambar~\ref{fig:bar-pattern-half} menampilkan distribusi biaya per pola beban untuk
-konfigurasi setengah, sedangkan Gambar~\ref{fig:timeseries-queue-half} menampilkan
-\emph{timeseries} antrean.
+Hierarki kontroler tetap sama dengan konfigurasi penuh, dengan LQR memberikan biaya terendah
+dan ranking PID--Rule-Based--Statik mengikuti pola identik. Yang berbeda adalah jarak absolut
+mengecil pada Statik (regret 1{,}508 vs 2{,}919) karena baseline LQR ikut menurun saat
+kapasitas terbatas, bukan karena Statik membaik.
 
 \begin{figure}[H]
     \centering
@@ -758,12 +751,12 @@ karena nilainya konstan terhadap $Q$.
     \label{fig:state-across-q}
 \end{figure}
 
-Pada panel latensi, LQR konsisten berada di tingkat terendah dengan pergeseran tipis dari
-1100 ms pada Q1 ke 1228 ms pada Q3.
-Pada panel utilisasi CPU, LQR-Q2 yang memprioritaskan penghematan sumber daya memberikan
-nilai paling rendah (22\%) dibanding LQR-Q1 dan LQR-Q3.
-Pada panel I/O, LQR-Q2 juga menunjukkan operasi tulis paling sedikit, sejalan dengan
-prioritas resource pada preset tersebut.
+LQR menanggapi setiap preset $Q$ dengan menggeser titik kerja sesuai prioritas, sementara
+Statik, Rule-Based, dan PID tetap konstan karena tidak terhubung dengan matriks biaya.
+LQR-Q1 yang mengutamakan antrean menjaga latensi paling rendah, sedangkan LQR-Q2 yang
+menonjolkan bobot sumber daya menarik CPU dan operasi tulis ke titik terendah meskipun
+mengorbankan latensi sedikit. LQR-Q3 berada di antara keduanya, mengonfirmasi bahwa
+pergeseran prioritas $Q$ dapat dipetakan secara prediktif ke perilaku kontrol.
 
 Kontroler Statik, Rule-Based, dan PID tampil sebagai garis horizontal karena perilakunya
 tidak ditentukan oleh $Q$.
@@ -821,9 +814,10 @@ ditangani oleh parameter statis.
 PID dan LQR jauh lebih stabil lintas mesin karena keduanya bereaksi terhadap kondisi
 aktual sistem, bukan bergantung pada nilai parameter yang ditetapkan sebelumnya.
 
-Gambar~\ref{fig:cross-experiment} menampilkan visualisasi yang sama dalam bentuk batang.
-Setiap panel menggunakan skala mandiri karena nilai absolut $J$ berbeda jauh antar eksperimen,
-sehingga skala bersama akan membuat perbedaan dalam panel kecil tidak terbaca.
+Gambar~\ref{fig:cross-experiment} menyajikan data yang sama dalam bentuk batang dengan
+skala mandiri per panel. Skala mandiri diperlukan karena nilai absolut $J$ berbeda jauh
+antar eksperimen, sehingga skala bersama akan menyembunyikan selisih kecil di panel
+yang menggunakan rentang sempit.
 
 \begin{figure}[H]
     \centering
