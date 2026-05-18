@@ -744,21 +744,32 @@ Gambar~\ref{fig:state-across-q} menunjukkan rata-rata variabel sistem untuk selu
 pada tiga preset $Q$ yang berbeda, dengan baseline ditampilkan sebagai garis putus-putus
 karena nilainya konstan terhadap $Q$.
 
+Gambar~\ref{fig:state-across-q-lqr} menampilkan bagaimana LQR menyesuaikan variabel
+sistem saat preset $Q$ berubah.
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{IV_R4__state_across_q_full.png}
-    \caption{Rata-rata variabel sistem per kontroler pada tiga preset $Q$ (sumber daya penuh)}
-    \label{fig:state-across-q}
+    \caption{Rata-rata variabel sistem LQR pada tiga preset $Q$ (sumber daya penuh)}
+    \label{fig:state-across-q-lqr}
 \end{figure}
 
-LQR menanggapi setiap preset $Q$ dengan menggeser titik kerja sesuai prioritas, sementara
-Statik, Rule-Based, dan PID tetap konstan karena tidak terhubung dengan matriks biaya.
+LQR menanggapi setiap preset $Q$ dengan menggeser titik kerja sesuai prioritas.
 LQR-Q1 yang mengutamakan antrean menjaga latensi paling rendah, sedangkan LQR-Q2 yang
-menonjolkan bobot sumber daya menarik CPU dan operasi tulis ke titik terendah meskipun
-mengorbankan latensi sedikit. LQR-Q3 berada di antara keduanya, mengonfirmasi bahwa
-pergeseran prioritas $Q$ dapat dipetakan secara prediktif ke perilaku kontrol.
+menonjolkan bobot sumber daya menarik CPU ke titik terendah meskipun latensi sedikit
+naik. LQR-Q3 berada di antara keduanya, mengonfirmasi bahwa pergeseran prioritas $Q$
+dapat dipetakan secara prediktif ke perilaku kontrol.
 
-Kontroler Statik, Rule-Based, dan PID tampil sebagai garis horizontal karena perilakunya
+Gambar~\ref{fig:state-across-q-baseline} menampilkan kontroler lain sebagai perbandingan.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{IV_R4b__state_across_q_baseline.png}
+    \caption{Rata-rata variabel sistem kontroler non-Q-aware pada tiga preset $Q$ (sumber daya penuh)}
+    \label{fig:state-across-q-baseline}
+\end{figure}
+
+Statik, Rule-Based, dan PID tampil sebagai garis datar karena perilakunya
 tidak ditentukan oleh $Q$.
 Ketiganya tidak memiliki mekanisme untuk menyerap perubahan prioritas, sehingga menghasilkan
 nilai variabel sistem yang sama untuk seluruh preset.
@@ -766,9 +777,9 @@ Inilah yang menjadi nilai utama LQR sebagai kontroler berbasis fungsi biaya, yai
 implementasi dapat dikonfigurasi ulang untuk prioritas yang berbeda hanya dengan mengganti
 matriks $Q$.
 
-Variabel utilisasi memori tidak ditampilkan karena pembacaan dari kontainer Elasticsearch
-menghasilkan nilai nol pada eksperimen ini, sehingga tidak dapat digunakan untuk membandingkan
-adaptasi antar kontroler.
+Utilisasi memori berhasil terbaca dengan rata-rata 45--50\% namun tidak ditampilkan pada
+grafik ini karena variasinya sangat kecil antar kontroler dan hampir tidak dipengaruhi
+oleh perubahan preset $Q$, sehingga tidak memberikan informasi pembeda yang berarti.
 
 \subsection{Robustness Lintas Mesin dan Konfigurasi}
 \label{sec:robustness}
