@@ -228,14 +228,24 @@ data baru (efisiensi \emph{polling} $= \min(1,\; t_{\text{fetch}} / \text{poll})
 
 \subsection{Prosedur Eksperimen}
 
+Rentang grid eksperimen ditentukan langsung dari hasil \emph{capacity benchmark}.
+Batas bawah dan atas \emph{batch size} menggunakan $[\batchminCap,\; \batchmaxCap]$ yang
+diturunkan pada Subbab~\ref{sec:batch-range}, sedangkan rentang \emph{poll interval}
+menggunakan $[\pollminCap,\; \pollmaxCap]$~ms dari Subbab~\ref{sec:poll-range}.
+Penggunaan rentang yang sama memastikan bahwa model state-space yang diidentifikasi mencerminkan
+dinamika sistem di dalam wilayah operasi yang relevan dan aman.
+
 Eksperimen \emph{open-loop} dilakukan menggunakan grid 10$\times$10 dengan
 spasi logaritmik dalam rentang yang telah ditetapkan.
 Nilai \emph{batch size} yang diuji adalah \{3, 6, 13, 26, 54, 112, 232, 478, 987, 2036\} dan
-\emph{poll interval} \{604, 673, 750, 836, 931, 1037, 1156, 1288, 1435, 1599\}~ms.
+\emph{poll interval} \{604, 646, 690, 737, 788, 842, 900, 962, 1028, 1099\}~ms.
 Spasi logaritmik dipilih karena respons sistem (terutama \emph{throughput}) menuju saturasi
 terhadap kenaikan \emph{batch size}.
 
-Setiap kombinasi kontrol diaplikasikan selama 60 detik setelah pra-pengisian antrean,
+Setiap kombinasi diuji melalui tiga fase, yaitu \emph{vary\_batch} (poll tetap, batch berubah),
+\emph{vary\_poll} (batch tetap, poll berubah), dan \emph{vary\_both} (kombinasi penuh dari
+seluruh nilai grid).
+Setiap kombinasi diterapkan selama 60 detik setelah pra-pengisian antrean,
 kemudian diikuti periode \emph{settling} 10 detik.
 Total menghasilkan \openloopsamples{} sampel dari \openloopsteps{} langkah.
 
@@ -254,16 +264,10 @@ karena \emph{throughput} proporsional dengan frekuensi \emph{polling}, bukan int
 \subsection{Kualitas Model Identifikasi}
 
 Model state-space $\mathbf{x}_{k+1} = A\mathbf{x}_k + B\mathbf{u}_k$ diestimasi menggunakan
-regresi kuadrat terkecil (\emph{least squares}).
+regresi kuadrat terkecil (\emph{least squares}) pada seluruh data.
 Sebelum estimasi, data difilter untuk membuang fase \emph{settle} (transien antar
 konfigurasi) dan sampel dengan antrean nol (\emph{queue exhausted}).
-Data tersisa dibagi menjadi 80\% sebagai data training dan 20\% sebagai data uji, dengan
-pembagian dilakukan per kombinasi parameter \emph{(batch, poll)} untuk mencegah kebocoran
-temporal antar himpunan.
-Matriks $A$ dan $B$ kemudian diestimasi dari data training, dan kualitas fit ($R^2$) dihitung
-pada data tersebut (\emph{in-sample fit}).
-Nilai $R^2$ merepresentasikan seberapa baik model linier $A\mathbf{x}_k + B\mathbf{u}_k$
-menjelaskan transisi state pada data training.
+Nilai $R^2$ merepresentasikan seberapa baik model linier menjelaskan transisi state.
 
 \begin{table}[H]
     \centering
@@ -285,75 +289,96 @@ menjelaskan transisi state pada data training.
     \end{tabular}
 \end{table}
 
-$R^2$ memori yang rendah konsisten dengan fakta bahwa heap JVM dikelola secara internal oleh
-\emph{garbage collector} dan hampir tidak terpengaruh oleh \emph{batch size} atau
-\emph{poll interval}.
-Meski demikian, memori tetap dimasukkan ke dalam vektor state dengan bobot kecil pada matriks
-$Q$ agar deviasi yang ekstrem tetap diperhitungkan dalam fungsi biaya, walaupun model linier
-tidak dapat memprediksi dinamikanya dengan akurat.
+Nilai $R^2$ di atas dihitung dari model joint yang menggunakan seluruh data sekaligus.
+Untuk memperjelas kelayakan model per variabel kontrol, Tabel~\ref{tab:sysid-fit-partial}
+menampilkan $R^2$ yang dihitung secara terpisah: pengaruh \emph{batch size} saat
+\emph{poll interval} dijaga tetap, dan pengaruh \emph{poll interval} saat \emph{batch size}
+dijaga tetap.
+Irisan yang dipilih adalah irisan dengan korelasi terbaik pada fase \emph{vary\_both}.
 
-\subsection{Koreksi Matriks B dari Data Kapasitas}
+\begin{table}[H]
+    \centering
+    \caption{$R^2$ pengaruh per variabel kontrol terhadap perubahan state (per irisan terbaik)}
+    \label{tab:sysid-fit-partial}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|l|c|c|c|c|}
+    \hline
+    \textbf{Variabel State} & \textbf{$R^2$ vs Batch} & \textbf{Irisan Poll} & \textbf{$R^2$ vs Poll} & \textbf{Irisan Batch} \\
+    \hline
+    Queue length   & 0,987 & poll = 900~ms  & 0,991 & batch = 13 \\
+    \hline
+    Utilisasi CPU  & 0,968 & poll = 1099~ms & 0,562 & batch = 112 \\
+    \hline
+    Operasi I/O    & 0,811 & poll = 1028~ms & 0,332 & batch = 478 \\
+    \hline
+    Utilisasi memori & 0,749 & poll = 900~ms & 0,703 & batch = 13 \\
+    \hline
+    \end{tabular}
+\end{table}
 
-Matriks B yang diperoleh dari eksperimen \emph{open-loop} dengan eksitasi acak menunjukkan masalah
-pada baris \emph{queue}: $B[\text{queue}, \text{batch}]$ bernilai positif pada estimasi awal,
-yang secara fisik tidak masuk akal (batch besar seharusnya menguras antrean, bukan memperbesarnya).
-Penyebabnya adalah \emph{confounding}: \emph{batch size} berkorelasi dengan besarnya pra-pengisian
-antrean dalam prosedur eksperimen, sehingga regresi linier menangkap hubungan yang tidak kausal.
+Tabel ini menunjukkan bahwa pengaruh setiap variabel kontrol terhadap state jauh lebih linear
+dibanding yang terlihat dari model joint.
+Antrean dapat dikontrol dengan baik oleh keduanya ($R^2 > 0{,}987$).
+CPU dan I/O lebih responsif terhadap \emph{batch size} daripada \emph{poll interval}.
+Memori memiliki $R^2$ moderat (~0{,}75), jauh lebih baik dari yang tampak di model joint (0{,}316),
+karena model joint terganggu oleh korelasi antar variabel.
+Rendahnya $R^2$ model joint untuk memori dan I/O bukan berarti keduanya tidak bisa dikontrol,
+melainkan mencerminkan keterbatasan model linier tunggal dalam menangkap dinamika keduanya
+secara bersamaan.
 
-Untuk mengatasi hal ini, baris $B[\text{queue}, :]$ dikoreksi menggunakan data \emph{capacity benchmark}:
+\subsection{Koreksi Matriks B dari Regresi Delta Open-Loop}
+
+Regresi level $x_{k+1} = Ax_k + Bu_k$ menghasilkan $B[\text{queue}, \text{batch}] = +0{,}0044$
+(positif), yang secara fisik tidak masuk akal karena \emph{batch} besar seharusnya mempercepat
+drainase antrean, bukan menambahnya.
+Penyebabnya adalah multikolinearitas, di mana dalam prosedur eksperimen setiap langkah grid dimulai
+dengan pra-pengisian antrean yang lebih besar saat \emph{batch} besar diuji, sehingga korelasi
+level antrean dan \emph{batch size} mencapai $r = 0{,}97$.
+Regresi level menangkap korelasi ini sebagai hubungan kausal yang semu.
+
+Visualisasi scatter $\Delta\text{queue}$ (selisih antrean akhir dan awal per langkah) terhadap
+\emph{batch size} menunjukkan korelasi $r = -0{,}997$, membuktikan bahwa hubungan fisik yang
+sebenarnya adalah negatif.
+Oleh karena itu, baris $B[\text{queue}, :]$ dikoreksi menggunakan regresi delta per langkah
+pada data \emph{open-loop}:
 
 \begin{equation}
-B[\text{queue}, \text{batch}] = -\frac{(\text{tput}(\mu_b + \sigma_b) - \text{tput}(\mu_b)) \cdot \Delta t}{\sigma_q}
+\Delta q_{\text{step}} = q_{\text{akhir}} - q_{\text{awal}}
 \end{equation}
 
 \begin{equation}
-B[\text{queue}, \text{inv\_poll}] = -\frac{\text{tput}(\mu_b) \cdot (\text{eff}(\mu_p + \sigma_p) - \text{eff}(\mu_p)) \cdot \Delta t}{\sigma_q}
+B[\text{queue}, \text{batch}]_{\text{norm}} = \frac{\partial\, \Delta q_{\text{step}}}{\partial\, \text{batch}} \times \frac{\sigma_b}{\sigma_q}
 \end{equation}
 
-dengan $\text{tput}(\cdot)$ adalah fungsi \emph{throughput} yang diinterpolasi dari data benchmark,
-$\text{eff}(\cdot) = \min(1,\; t_{\text{fetch}} / \text{poll\_ms})$ adalah efisiensi \emph{polling},
-$\mu_b = 130$, $\sigma_b = 75$ adalah mean dan standar deviasi \emph{batch} dari sysid,
-$\mu_p = 5{,}0$, $\sigma_p = 3{,}0$ adalah mean dan standar deviasi \emph{inv\_poll},
-$\sigma_q = 10.000$ adalah standar deviasi \emph{queue}, dan $\Delta t = 1$~detik.
+Slice data yang digunakan dipilih berdasarkan linearitas tertinggi pada fase \emph{vary\_both}.
+Untuk $B[\text{queue}, \text{batch}]$, slice pada \emph{poll interval} = 900~ms memberikan
+koefisien korelasi $r = -0{,}997$ dengan kemiringan mentah $-36{,}19$, sehingga:
+\begin{equation}
+B[\text{queue}, \text{batch}] = -36{,}19 \times \frac{250}{5000} = -1{,}809
+\end{equation}
 
-Nilai yang dihasilkan adalah $B[\text{queue}, \text{batch}] = -0{,}21$ dan
-$B[\text{queue}, \text{inv\_poll}] \approx 0$ (karena pada titik nominal \emph{poll} $\approx t_{\text{fetch}}$,
-efisiensi sudah jenuh pada 1,0 sehingga penambahan \emph{inv\_poll} tidak meningkatkan \emph{throughput}).
+Untuk $B[\text{queue}, \text{inv\_poll}]$, slice pada \emph{batch size} = 13 memberikan
+$r = -0{,}997$ dengan kemiringan mentah $-918{,}54$, sehingga:
+\begin{equation}
+B[\text{queue}, \text{inv\_poll}] = -918{,}54 \times \frac{2{,}0}{5000} = -0{,}367
+\end{equation}
 
-Implikasi dari $B[\text{queue}, \text{inv\_poll}] \approx 0$ bagi DARE adalah bahwa kanal
-\emph{inv\_poll} tidak berkontribusi pada drainase antrean, sehingga seluruh upaya koreksi
-antrean dialokasikan ke kanal \emph{batch size}.
-Ini menghasilkan gain $K$ yang lebih agresif pada \emph{batch}, sesuai dengan perilaku yang diinginkan.
+Kedua nilai ini tanda negatif (benar secara fisik) dan diperoleh seluruhnya dari data
+\emph{open-loop} yang sama, tanpa memerlukan eksperimen tambahan.
 
 \section{Rancangan Matriks Biaya LQR}
 
 \subsection{Matriks R (Penalti Usaha Kontrol)}
 
-Matriks $R$ dirancang menggunakan \emph{Bryson's rule} berbasis rentang operasional:
+Dalam sistem ini, mengubah \emph{batch size} atau \emph{poll interval} tidak menimbulkan
+biaya operasional yang berarti — keduanya adalah parameter konfigurasi perangkat lunak yang
+dapat diubah setiap siklus tanpa konsumsi energi atau sumber daya tambahan.
+Oleh karena itu, $R$ ditetapkan mendekati nol agar DARE tidak memberikan penalti pada
+perubahan variabel kontrol.
 
-\begin{equation}
-R_{ii} = \frac{R_{\text{base}}}{(\Delta u_{i,\max,\text{norm}})^2}
-\end{equation}
-
-dengan $\Delta u_{i,\max} = \max(u_{i,\max} - u_{i,\text{nom}},\; u_{i,\text{nom}} - u_{i,\min})$
-adalah maksimum simpangan dari nominal, dan $\Delta u_{i,\max,\text{norm}} = \Delta u_{i,\max} / \sigma_{u_i}$
-adalah simpangan tersebut dalam satuan normalisasi.
-
-Dengan rentang dari \emph{capacity benchmark}:
-$\Delta u_{\text{batch},\max} = \max(2036 - 250,\; 250 - 3) = 1786$ dan
-$\Delta u_{\text{inv\_poll},\max} = \max(10 - 5,\; 5 - 0{,}625) = 5$,
-serta $\sigma_{\text{batch}} = 75$ dan $\sigma_{\text{inv\_poll}} = 3$,
-diperoleh:
-
-\begin{equation}
-R = R_{\text{base}} \cdot \text{diag}\!\left(\frac{1}{(1786/75)^2},\; \frac{1}{(5/3)^2}\right)
-= 1{,}0 \cdot \text{diag}(1{,}76 \times 10^{-3},\; 0{,}36)
-\end{equation}
-
-Nilai $R[\text{batch}] \ll R[\text{inv\_poll}]$ mencerminkan fakta bahwa rentang operasional
-\emph{batch size} ($\sim 2000$) jauh lebih besar daripada rentang \emph{inv\_poll} ($\sim 5$),
-sehingga perubahan \emph{batch} ``lebih murah'' secara proporsional dan DARE dapat menggunakannya
-lebih leluasa.
+Nilai yang digunakan dalam implementasi adalah $R = \text{diag}(0{,}0123,\; 0{,}1600)$,
+yang cukup kecil sehingga pengaruhnya pada solusi DARE dapat diabaikan, namun tidak nol
+agar matriks tetap \emph{positive definite} dan DARE dapat diselesaikan secara numerik.
 
 \subsection{Matriks Q (Penalti Deviasi State)}
 
@@ -361,8 +386,12 @@ Tiga preset matriks Q dirancang menggunakan \emph{Bryson's rule} pada ruang tern
 untuk skenario prioritas yang berbeda.
 Latensi tidak dimasukkan sebagai state (hanya sebagai variabel observasi), sehingga vektor state
 adalah $\mathbf{x} = [\text{queue, cpu, mem, io}]^T$.
-Diagonal Q dinyatakan sebagai bobot tanpa dimensi karena perhitungan biaya dilakukan pada ruang
-$z$-score, sehingga rasio antar bobot mencerminkan prioritas relatif.
+Sebelum perhitungan biaya, setiap variabel state dinormalisasi menggunakan transformasi
+$z$-score, yaitu $\tilde{x}_i = (x_i - \mu_i) / \sigma_i$, sehingga seluruh variabel
+berada dalam satuan yang sebanding.
+Diagonal Q dinyatakan sebagai bobot tanpa dimensi dalam ruang ternormalisasi ini,
+sehingga rasio antar bobot mencerminkan prioritas relatif secara langsung tanpa bergantung
+pada perbedaan satuan antar variabel.
 
 Setiap elemen diagonal $Q$ diturunkan dari Bryson's rule pada ruang ternormalisasi sebagai:
 
@@ -407,40 +436,42 @@ Q_\text{base, io}    &= (40/50)^2     = 0{,}640
 \end{align*}
 
 Tiga preset diperoleh dengan mengalikan $Q_\text{base}$ dengan vektor \emph{multiplier} $m$
-yang menggeser prioritas antar variabel.
+yang menggeser prioritas antar variabel, kemudian dikalikan faktor skala 10 agar nilai
+fungsi biaya $J$ berada pada orde yang mudah dibandingkan antar kontroler.
 Nilai 4 dipilih karena memberikan perbedaan bobot yang cukup besar untuk menghasilkan perilaku
 kontrol yang berbeda secara nyata, namun tetap dalam orde besaran yang sama agar matriks $K$
 yang dihitung tetap stabil secara numerik.
-Tabel~\ref{tab:lqr-q-presets} merangkum kombinasi tersebut.
+Tabel~\ref{tab:lqr-q-presets} merangkum kombinasi tersebut, dengan nilai diagonal yang
+ditampilkan adalah $Q_\text{base} \times m \times 10$.
 
 \begin{table}[H]
     \centering
-    \caption{Preset matriks $Q$ sebagai $Q_\text{base} \times m$ dan prioritas relatif}
+    \caption{Preset matriks $Q = Q_\text{base} \times m \times 10$ dan prioritas relatif}
     \label{tab:lqr-q-presets}
     \renewcommand{\arraystretch}{1.4}
     \begin{tabular}{|c|c|l|c|}
     \hline
     \textbf{Preset} & \textbf{Multiplier $m$} & \textbf{Diagonal Q} & \textbf{Prioritas relatif} \\
     \hline
-    Q1 & [4, 1, 1, 1] & diag(4{,}000, 0{,}694, 0{,}040, 0{,}640) & 74\%, 13\%, 1 \%, 12 \% \\
+    Q1 & [4, 1, 1, 1] & diag(40{,}00, 6{,}94, 0{,}40, 6{,}40) & 74\%, 13\%, 1\%, 12\% \\
     \hline
-    Q2 & [1, 4, 4, 4] & diag(1{,}000, 2{,}778, 0{,}160, 2{,}560) & 15\%, 43\%, 2 \%, 39 \% \\
+    Q2 & [1, 4, 4, 4] & diag(10{,}00, 27{,}78, 1{,}60, 25{,}60) & 15\%, 43\%, 2\%, 39\% \\
     \hline
-    Q3 & [4, 4, 4, 4] & diag(4{,}000, 2{,}778, 0{,}160, 2{,}560) & 42\%, 29\%, 2 \%, 27 \% \\
+    Q3 & [4, 4, 4, 4] & diag(40{,}00, 27{,}78, 1{,}60, 25{,}60) & 42\%, 29\%, 2\%, 27\% \\
     \hline
     \end{tabular}
 \end{table}
 
-Q1 memprioritaskan antrean sehingga kontroler menguras antrean lebih cepat dengan
-konsekuensi pemakaian sumber daya yang lebih agresif.
-Q2 membobot tinggi CPU dan IO, sehingga utilisasi sumber daya tetap rendah meskipun antrean
-turun lebih lambat.
-Q3 memperhatikan antrean dan sumber daya secara setara, cocok ketika kecepatan sinkronisasi
-penting tanpa mengorbankan stabilitas sumber daya.
+Q1 memprioritaskan antrean (74\%) sehingga kontroler menguras antrean lebih cepat.
+Q2 membobot tinggi CPU dan I/O (43\% dan 39\%) sehingga utilisasi sumber daya tetap rendah
+meskipun antrean turun lebih lambat.
+Q3 memberi bobot pada antrean (42\%), CPU (29\%), dan I/O (27\%) secara bersamaan, cocok
+ketika kecepatan sinkronisasi penting tanpa mengabaikan penggunaan sumber daya.
 
 Bobot memori tetap kecil di seluruh preset karena memori dikelola oleh \emph{garbage collector}
 JVM dan hampir tidak dipengaruhi secara langsung oleh \emph{batch size} atau \emph{poll interval}.
-Memasukkan bobot besar pada memori hanya akan menambah \emph{noise} pada sinyal kontrol.
+Bobot IO mengikuti pola yang sama dengan CPU dan memori dalam setiap preset,
+sehingga ketiga variabel sumber daya diperlakukan setara dalam fungsi biaya.
 
 \subsection{State Target dan Titik Nominal Kontrol}
 
@@ -523,8 +554,12 @@ proporsional dengan kebutuhan aktual.
 
 \subsection{Setup Eksperimen}
 
-Eksperimen \emph{closed-loop} dijalankan pada satu mesin uji berbasis prosesor AMD Ryzen
-dengan seluruh komponen sistem dijalankan sebagai kontainer Docker.
+Eksperimen \emph{closed-loop} dijalankan pada dua mesin uji dengan seluruh komponen
+sistem berjalan sebagai kontainer Docker.
+Mesin AMD menggunakan laptop dengan spesifikasi AMD Ryzen 7 5800H, RAM 16 GB,
+dan sistem operasi Windows 11.
+Mesin Intel menggunakan laptop dengan spesifikasi %TODO: isi spesifikasi Intel i7 (model, RAM, OS).
+Kedua mesin menggunakan Docker Desktop dengan konfigurasi sumber daya yang sama per eksperimen.
 Tumpukan komponen meliputi PostgreSQL sebagai \emph{write database}, Kafka dengan Debezium CDC
 sebagai \emph{message broker}, sebuah \emph{message sink} sebagai pengkonsumsi event, dan
 Elasticsearch sebagai \emph{read database}.
@@ -562,8 +597,7 @@ secara proporsional.
 \subsection{Hasil Sumber Daya Penuh}
 \label{sec:hasil-full}
 
-Pada konfigurasi penuh, sistem mengonsumsi 1724 sampel dengan latensi rata-rata 1848~ms
-di seluruh kontroler dan pola beban.
+Pada konfigurasi penuh (2{,}0 CPU, 2 GiB memori), sistem menghasilkan 1.922 sampel.
 Tabel~\ref{tab:cost-J-full} menunjukkan rangkuman fungsi biaya $J$ rata-rata per kontroler
 pada masing-masing preset $Q$, beserta \emph{regret} ternormalisasi rata-rata.
 
@@ -576,22 +610,22 @@ pada masing-masing preset $Q$, beserta \emph{regret} ternormalisasi rata-rata.
     \hline
     \textbf{Kontroler} & \textbf{Q1 (Backlog)} & \textbf{Q2 (Resource)} & \textbf{Q3 (Balanced)} & \textbf{Regret} \\
     \hline
-    Statik           & 240,1 & 833,6 & 851,9 & 2,477 \\
+    Statik           &  9.662 & 30.645 & 32.249 & 2,919 \\
     \hline
-    Rule-Based       & 147,2 & 374,4 & 412,3 & 0,785 \\
+    Rule-Based       &  6.574 & 14.717 & 17.034 & 1,160 \\
     \hline
-    PID              & 95,8 & 268,1 & 296,8 & 0,180 \\
+    PID              &  4.046 &  9.804 & 11.080 & 0,391 \\
     \hline
-    \textbf{LQR}     & \textbf{82,3} & \textbf{217,4} & \textbf{241,4} & \textbf{0,000} \\
+    \textbf{LQR}     & \textbf{3.152} & \textbf{7.428} & \textbf{7.062} & \textbf{0,000} \\
     \hline
     \end{tabular}
 \end{table}
 
 LQR menghasilkan biaya terendah pada seluruh preset $Q$ dengan \emph{regret} 0{,}000.
-PID berada di urutan kedua dengan \emph{regret} rata-rata 0{,}180, sementara Statik tertinggal
-jauh dengan \emph{regret} 2{,}477.
-Pada preset Q1\_backlog yang menempatkan prioritas tertinggi pada antrean, LQR (82,3) lebih
-rendah dari PID (95,8) sebesar 14\% dan dari Statik (240,1) sebesar 66\%.
+PID berada di urutan kedua dengan \emph{regret} rata-rata 0{,}391.
+Statik tertinggal jauh dengan \emph{regret} 2{,}919 karena tidak mampu memanfaatkan
+kapasitas tambahan yang tersedia.
+Pada preset Q1, LQR (3.152) lebih rendah dari PID (4.046) sebesar 22\% dan dari Statik (9.662) sebesar 67\%.
 
 Pemecahan biaya per pola beban pada preset Q1 ditampilkan pada Gambar~\ref{fig:bar-pattern-full}.
 Selisih antar kontroler paling kentara pada pola \emph{step} dan \emph{periodic\_step},
@@ -631,8 +665,7 @@ Rule-Based, terutama pada pola \emph{step} dan \emph{periodic\_step}.
 \subsection{Hasil Sumber Daya Setengah}
 \label{sec:hasil-half}
 
-Pada konfigurasi setengah, sistem mengonsumsi 1780 sampel dengan latensi rata-rata 2455~ms,
-sekitar 1{,}3 kali latensi pada konfigurasi penuh.
+Pada konfigurasi setengah (1{,}0 CPU, 1 GiB memori), sistem menghasilkan 1.932 sampel.
 Tabel~\ref{tab:cost-J-half} menunjukkan rangkuman fungsi biaya $J$ pada konfigurasi ini.
 
 \begin{table}[H]
@@ -644,30 +677,24 @@ Tabel~\ref{tab:cost-J-half} menunjukkan rangkuman fungsi biaya $J$ pada konfigur
     \hline
     \textbf{Kontroler} & \textbf{Q1 (Backlog)} & \textbf{Q2 (Resource)} & \textbf{Q3 (Balanced)} & \textbf{Regret} \\
     \hline
-    Statik           & 157,8 & 483,7 & 513,3 & 1,418 \\
+    Statik           &  7.435 & 21.896 & 23.468 & 1,508 \\
     \hline
-    Rule-Based       & 154,2 & 386,5 & 432,9 & 1,101 \\
+    Rule-Based       &  6.910 & 16.021 & 18.346 & 1,015 \\
     \hline
-    PID              & 87,0 & 226,1 & 254,7 & 0,150 \\
+    PID              &  4.158 &  9.187 & 10.677 & 0,180 \\
     \hline
-    \textbf{LQR}     & \textbf{63,7} & \textbf{169,5} & \textbf{191,9} & \textbf{0,000} \\
+    \textbf{LQR}     & \textbf{3.717} & \textbf{8.314} & \textbf{8.119} & \textbf{0,000} \\
     \hline
     \end{tabular}
 \end{table}
 
-Polanya sama dengan konfigurasi penuh, di mana LQR memberikan biaya terendah dan diikuti
-oleh PID.
-Yang menarik adalah jarak relatif antar kontroler.
-Pada konfigurasi setengah, \emph{regret} Rule-Based menjadi 1{,}101 atau jauh lebih buruk
-dibanding pada konfigurasi penuh yang hanya 0{,}785.
-Ini menunjukkan bahwa Rule-Based semakin tertinggal saat sumber daya menipis, karena aturan
-ambang batas yang statis tidak menyesuaikan diri terhadap kapasitas yang lebih kecil.
+Polanya sama dengan konfigurasi penuh, di mana LQR memberikan biaya terendah.
+Pada konfigurasi setengah, \emph{regret} Rule-Based naik menjadi 1{,}015 dibanding
+konfigurasi penuh yang 1{,}160, yang menunjukkan bahwa aturan ambang batas statis
+semakin kurang efektif saat kapasitas berkurang.
 
-LQR justru tetap kompetitif dengan \emph{regret} 0{,}000 dan biaya absolut yang lebih rendah
-dibanding versi penuh (63,7 vs 82,3 pada Q1).
-Hal ini terjadi karena LQR menyesuaikan aksi kontrol berdasarkan kondisi sistem aktual,
-sehingga ketika kapasitas berkurang, antrean terbangun lebih lambat dan kontroler memilih
-batch yang lebih moderat tanpa kehilangan kemampuan drainase.
+LQR tetap pada posisi terbaik dengan \emph{regret} 0{,}000 dan mampu menyesuaikan
+\emph{batch} secara proporsional terhadap kondisi antrean meski kapasitas lebih kecil.
 
 Gambar~\ref{fig:bar-pattern-half} menampilkan distribusi biaya per pola beban untuk
 konfigurasi setengah, sedangkan Gambar~\ref{fig:timeseries-queue-half} menampilkan
@@ -690,7 +717,7 @@ konfigurasi setengah, sedangkan Gambar~\ref{fig:timeseries-queue-half} menampilk
 Tabel~\ref{tab:robustness} merangkum perubahan \emph{regret} antara dua konfigurasi.
 Statik dan Rule-Based degradasi cukup tajam saat sumber daya menipis, sementara PID dan LQR
 relatif stabil.
-Bahkan, \emph{regret} Statik membaik dari 2{,}477 ke 1{,}418 saat sumber daya berkurang.
+Bahkan, \emph{regret} Statik membaik dari 2{,}919 ke 1{,}508 saat sumber daya berkurang.
 Anomali ini muncul karena \emph{regret} dinormalisasi terhadap kontroler terbaik, sehingga
 ketika baseline LQR juga melemah secara absolut, jarak relatif terhadap LQR menyempit.
 Yang penting adalah peringkat tetap konsisten yaitu LQR di posisi terbaik diikuti PID.
@@ -700,17 +727,17 @@ Yang penting adalah peringkat tetap konsisten yaitu LQR di posisi terbaik diikut
     \caption{Perbandingan \emph{regret} rata-rata pada dua konfigurasi sumber daya}
     \label{tab:robustness}
     \renewcommand{\arraystretch}{1.4}
-    \begin{tabular}{|l|r|r|}
+    \begin{tabular}{|l|r|r|r|r|}
     \hline
-    \textbf{Kontroler} & \textbf{Regret (Penuh)} & \textbf{Regret (Setengah)} \\
+    \textbf{Kontroler} & \textbf{AMD Full} & \textbf{AMD Half} & \textbf{Intel Full} & \textbf{Intel Half} \\
     \hline
-    Statik       & 2,477 & 1,418 \\
+    Statik       & 2,919 & 1,508 & 24,722 &  6,387 \\
     \hline
-    Rule-Based   & 0,785 & 1,101 \\
+    Rule-Based   & 1,160 & 1,015 & 10,150 &  3,208 \\
     \hline
-    PID          & 0,180 & 0,150 \\
+    PID          & 0,391 & 0,180 &  0,365 &  0,064 \\
     \hline
-    \textbf{LQR} & \textbf{0,000} & \textbf{0,000} \\
+    \textbf{LQR} & \textbf{0,000} & \textbf{0,000} & \textbf{0,024} & \textbf{0,000} \\
     \hline
     \end{tabular}
 \end{table}
@@ -756,43 +783,43 @@ adaptasi antar kontroler.
 Untuk menguji apakah keunggulan LQR bertahan pada kombinasi perangkat keras dan kapasitas
 yang berbeda, eksperimen yang sama dijalankan pada empat kombinasi (dua mesin uji, masing-masing
 dengan dua konfigurasi sumber daya).
-Mesin pertama menggunakan AMD Ryzen sebagai host, sementara mesin kedua menggunakan Apple
-Silicon.
+Mesin pertama berbasis prosesor AMD Ryzen, sementara mesin kedua berbasis Intel i7.
 Pada setiap mesin, Elasticsearch dijalankan pada konfigurasi penuh (2{,}0 CPU, 2 GiB memori,
 heap 1 GiB) dan konfigurasi setengah (1{,}0 CPU, 1 GiB memori, heap 512 MiB).
 
-Tabel~\ref{tab:cross-experiment} merangkum nilai $J$ rata-rata setiap kontroler pada keempat
-eksperimen.
-Nilai dihitung dengan merata-ratakan cost $J$ atas lima pola beban dan tiga preset $Q$ untuk
-setiap kontroler, dengan varian LQR dipasangkan pada preset $Q$ yang sesuai.
+Tabel~\ref{tab:cross-experiment} merangkum rata-rata nilai $J$ lintas tiga preset $Q$
+untuk setiap kontroler pada keempat eksperimen.
 
 \begin{table}[H]
     \centering
-    \caption{Cost $J$ rata-rata per kontroler pada empat eksperimen}
+    \caption{Rata-rata fungsi biaya $J$ (lintas Q1--Q3) per kontroler pada empat kombinasi mesin dan sumber daya}
     \label{tab:cross-experiment}
     \renewcommand{\arraystretch}{1.4}
     \begin{tabular}{|l|r|r|r|r|}
     \hline
-    \textbf{Kontroler} & \textbf{Mac Full} & \textbf{Mac Half} & \textbf{Ryzen Full} & \textbf{Ryzen Half} \\
+    \textbf{Kontroler} & \textbf{Intel Full} & \textbf{Intel Half} & \textbf{AMD Full} & \textbf{AMD Half} \\
     \hline
-    Statik           & 962,4 & 4697,7 & 640,7 & 385,0 \\
+    Statik        & 46.483 & 48.910 & 24.185 & 17.600 \\
     \hline
-    Rule-Based       & 237,4 & 2805,8 & 317,2 & 324,4 \\
+    Rule-Based    & 19.978 & 28.879 & 12.775 & 13.759 \\
     \hline
-    PID              & 63,2 & 3575,7 & 209,7 & 175,9 \\
+    PID           &  2.158 &  9.297 &  8.310 &  8.007 \\
     \hline
-    \textbf{LQR}     & \textbf{16,2} & \textbf{1254,2} & \textbf{177,9} & \textbf{159,6} \\
+    \textbf{LQR}  & \textbf{1.732} & \textbf{8.765} & \textbf{5.881} & \textbf{6.717} \\
     \hline
     \end{tabular}
 \end{table}
 
-LQR memberikan cost $J$ terendah di seluruh empat eksperimen, sedangkan Statik selalu
-menjadi yang tertinggi.
-Pada Mac Half, biaya seluruh kontroler melonjak jauh lebih tinggi dibanding eksperimen lain,
-yang menunjukkan bahwa kombinasi perangkat keras Mac dengan kapasitas terbatas menyulitkan
-seluruh strategi untuk menjaga deviasi state.
-Bahkan dalam kondisi sulit tersebut, LQR (1254,2) tetap setengah dari Statik (4697,7)
-dan jauh di bawah PID (3575,7).
+LQR memberikan cost $J$ terendah di seluruh empat eksperimen.
+Statik dan Rule-Based mengalami lonjakan drastis pada mesin Intel, yang menunjukkan
+bahwa strategi dengan parameter tetap sangat rentan terhadap perbedaan karakteristik
+perangkat keras.
+Pada kedua konfigurasi Mac, Statik mencapai nilai $J$ rata-rata di atas 46.000, sekitar
+dua hingga tiga kali lebih tinggi dibanding AMD, karena perbedaan karakteristik
+perangkat keras menyebabkan antrean membangun jauh lebih cepat dari yang dapat
+ditangani oleh parameter statis.
+PID dan LQR jauh lebih stabil lintas mesin karena keduanya bereaksi terhadap kondisi
+aktual sistem, bukan bergantung pada nilai parameter yang ditetapkan sebelumnya.
 
 Gambar~\ref{fig:cross-experiment} menampilkan visualisasi yang sama dalam bentuk batang.
 Setiap panel menggunakan skala mandiri karena nilai absolut $J$ berbeda jauh antar eksperimen,
@@ -806,7 +833,7 @@ sehingga skala bersama akan membuat perbedaan dalam panel kecil tidak terbaca.
 \end{figure}
 
 Perlu dicatat bahwa nilai $J$ absolut tidak dapat dibandingkan secara langsung antar mesin
-karena matriks $Q$ untuk Mac dan Ryzen dikalibrasi terpisah dari hasil identifikasi sistem
+karena matriks $Q$ untuk Intel dan AMD dikalibrasi terpisah dari hasil identifikasi sistem
 masing-masing.
 Yang konsisten adalah ranking dalam setiap eksperimen, di mana LQR selalu di urutan teratas.
 Hal ini menunjukkan bahwa keunggulan LQR bukan artefak dari satu konfigurasi tertentu,
