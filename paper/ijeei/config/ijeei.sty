@@ -1,0 +1,77 @@
+% =============================================================================
+% IJEEI style file (International Journal on Electrical Engineering and
+% Informatics, ITB). Matches the visual conventions of the official Word
+% template: single column, A4, Times New Roman 12pt, 1.5 line spacing for
+% review, numbered sections (1, 2, ...), italic subsections (A., B., ...).
+% =============================================================================
+
+\ProvidesPackage{config/ijeei}
+
+% --- Page geometry ----------------------------------------------------------
+\RequirePackage[a4paper,margin=2.5cm]{geometry}
+
+% --- Fonts ------------------------------------------------------------------
+\RequirePackage{mathptmx}   % Times New Roman for text & math
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+
+% --- Spacing ----------------------------------------------------------------
+\RequirePackage{setspace}
+\onehalfspacing             % 1.5 line spacing for review version
+
+% --- Math & symbols ---------------------------------------------------------
+\RequirePackage{amsmath,amssymb}
+\RequirePackage{bm}
+
+% --- Floats -----------------------------------------------------------------
+\RequirePackage{graphicx}
+\graphicspath{{figures/}}
+\RequirePackage{booktabs}
+\RequirePackage{array}
+\RequirePackage{float}
+\RequirePackage{tabularx}
+
+% --- Captions ---------------------------------------------------------------
+\RequirePackage[font=small,labelfont=bf,labelsep=period,justification=centering]{caption}
+\renewcommand{\figurename}{Figure}
+\renewcommand{\tablename}{Table}
+
+% --- Section numbering & style ---------------------------------------------
+\RequirePackage{titlesec}
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\Alph{subsection}}
+\renewcommand{\thesubsubsection}{\arabic{subsubsection}}
+
+\titleformat{\section}{\normalsize\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\itshape}{\thesubsection.}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{\thesubsubsection)}{0.6em}{}
+
+\titlespacing*{\section}{0pt}{1.2em}{0.5em}
+\titlespacing*{\subsection}{0pt}{0.8em}{0.3em}
+\titlespacing*{\subsubsection}{0pt}{0.6em}{0.2em}
+
+% --- Equation numbering: (1), (2), ... flush right (default in LaTeX) -------
+
+% --- Bibliography (IEEE style numbered) -------------------------------------
+\RequirePackage[numbers,sort&compress]{natbib}
+\bibliographystyle{IEEEtran}
+
+% --- Hyperref (load last in main file ideally) ------------------------------
+\RequirePackage[hidelinks]{hyperref}
+
+% --- Title block helpers ----------------------------------------------------
+\RequirePackage{authblk}
+\renewcommand\Affilfont{\normalsize\itshape}
+\renewcommand\Authfont{\normalsize}
+\setlength{\affilsep}{0.4em}
+
+% --- Abstract: italic body as per IJEEI template ----------------------------
+\renewenvironment{abstract}{%
+  \noindent\textit{Abstract:}\itshape\ignorespaces
+}{\par\vspace{0.5em}}
+
+\newcommand{\keywords}[1]{\noindent\textit{Keywords:} #1\par\vspace{0.5em}}
+
+% --- Paragraph spacing ------------------------------------------------------
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}

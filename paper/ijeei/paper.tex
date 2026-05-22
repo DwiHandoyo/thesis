@@ -1,0 +1,43 @@
+% =============================================================================
+% IJEEI ITB submission.
+% Compile with: pdflatex paper && bibtex paper && pdflatex paper && pdflatex paper
+% =============================================================================
+
+\documentclass[12pt,a4paper,onecolumn]{article}
+
+\usepackage{config/ijeei}
+
+% --- Meta information (title, authors). Edit data/info.tex --------------------
+\input{data/info}
+
+% --- Experimental data macros. Edit data/data.tex ----------------------------
+\input{data/data}
+
+\PaperAuthors
+\title{\PaperTitle}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+% --- Abstract ---------------------------------------------------------------
+\begin{abstract}
+The Command Query Responsibility Segregation (CQRS) architecture is widely used in distributed systems to separate read and write paths, but it requires asynchronous synchronization through a message broker and exposes the system to eventual consistency. Two parameters dominate this synchronization: batch size and poll interval. Static settings cannot track varying workloads, and prior dynamic-batching approaches rely on heuristics that consider only one metric at a time. This paper formulates the synchronization pipeline as a discrete-time linear MIMO system and applies a Linear Quadratic Regulator (LQR) whose cost function explicitly trades off backlog reduction, latency, and resource utilization. The state-space model is identified from open-loop measurements, and the controller is compared against static, rule-based, and PID baselines on five load patterns and three weighting configurations. Across these conditions, the LQR controller achieves the lowest mean and max normalized regret, indicating both optimality on average and robustness to changes in the priority configuration.
+\end{abstract}
+
+\keywords{CQRS; data synchronization; eventual consistency; Kafka; Linear Quadratic Regulator; MIMO control; state-space}
+
+% --- Body -------------------------------------------------------------------
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_proposed_method}
+\input{sections/04_experiment}
+\input{sections/05_results}
+\input{sections/06_conclusion}
+
+% --- References -------------------------------------------------------------
+\bibliography{references}
+
+\end{document}

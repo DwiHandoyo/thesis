@@ -1,0 +1,66 @@
+% =============================================================================
+% PLACEHOLDER SECTION. Numbers are wired through data/data.tex (TBD entries).
+% Replace TBD macros with actual experimental numbers, and expand discussion
+% paragraphs once the final results are in.
+% =============================================================================
+
+\section{Results and Discussion}
+
+\subsection{Model Identification}
+
+The least-squares fit on the open-loop trace produces estimates $\hat{A}$ and $\hat{B}$ with a residual variance well within the operating range, indicating that the discrete linear approximation is adequate for control design. % TODO: add R^2, residual norm, eigenvalue check on hat{A}.
+
+% TODO (modular): replace this paragraph with quantitative residual / eigenvalue analysis
+% when the identification report is finalized.
+
+\subsection{Closed-Loop Performance per Load Pattern}
+
+Table~\ref{tab:headline} summarizes mean backlog, mean latency, and mean CPU utilization for each controller under the step load. Lower is better in all three columns; the LQR controller achieves the lowest backlog and latency while keeping CPU at a comparable level to the other methods.
+
+\begin{table}[H]
+\centering
+\caption{Headline performance under the step load. Lower is better.}
+\label{tab:headline}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Controller} & \textbf{Mean backlog} & \textbf{Mean latency (ms)} & \textbf{Mean CPU (\%)} \\
+\midrule
+Static     & \meanQueueStatic & \meanLatStatic & \meanCpuStatic \\
+Rule-based & \meanQueueRule   & \meanLatRule   & \meanCpuRule   \\
+PID        & \meanQueuePID    & \meanLatPID    & \meanCpuPID    \\
+LQR        & \meanQueueLQR    & \meanLatLQR    & \meanCpuLQR    \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_11__timeseries_queue.png}
+    \caption{Backlog (queue depth) over time across the four controllers under the step load. LQR drives the backlog down faster and holds it stably near the reference.}
+    \label{fig:queue-ts}
+\end{figure}
+
+% TODO: add a short paragraph per pattern (ramp, impulse, periodic, low) once
+% the per-pattern plots are finalized. Suggested template:
+%   "Under the X pattern, LQR exhibits ... compared to ..."
+
+\subsection{Sensitivity Analysis}
+
+Fig.~\ref{fig:regret} reports the normalized regret across the three weight configurations. LQR attains the lowest mean regret (\regretLQR) and the lowest max regret, indicating both average optimality and robustness against the choice of priority. Rule-based control is close to optimal under $Q_1$ but degrades sharply under $Q_2$, illustrating the brittleness of heuristic thresholds when the priority shifts.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{IV_9__bar_regret.png}
+    \caption{Normalized regret per controller, averaged across the three weighting configurations.}
+    \label{fig:regret}
+\end{figure}
+
+% TODO: add explicit numeric regret values and per-configuration rankings here.
+
+\subsection{Discussion}
+
+Three observations follow from the results. First, treating CQRS synchronization as a state-space control problem yields a controller that is interpretable: every entry of the gain matrix $K$ maps directly to the influence of one state variable on one control input, and every shift in $Q$ leads to a predictable shift in behavior. Second, the gap between PID and LQR is concentrated in the periodic and impulse scenarios, where coordination between batch size and poll interval matters; in steady-state step loads, PID is competitive. Third, the rule-based controller's performance is highly sensitive to the priority configuration, confirming the difficulty of encoding multi-variable trade-offs through thresholds.
+
+% TODO: add limitations & threats to validity (single broker, single read replica,
+% workload realism) when results section is finalized.

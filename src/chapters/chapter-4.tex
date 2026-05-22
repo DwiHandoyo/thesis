@@ -740,10 +740,6 @@ Yang penting adalah peringkat tetap konsisten yaitu LQR di posisi terbaik diikut
 
 Salah satu karakteristik LQR yang membedakannya dari kontroler lain adalah kemampuannya
 mengubah perilaku berdasarkan matriks bobot $Q$.
-Gambar~\ref{fig:state-across-q} menunjukkan rata-rata variabel sistem untuk seluruh kontroler
-pada tiga preset $Q$ yang berbeda, dengan baseline ditampilkan sebagai garis putus-putus
-karena nilainya konstan terhadap $Q$.
-
 Gambar~\ref{fig:state-across-q-lqr} menampilkan bagaimana LQR menyesuaikan variabel
 sistem saat preset $Q$ berubah.
 
@@ -776,10 +772,6 @@ nilai variabel sistem yang sama untuk seluruh preset.
 Inilah yang menjadi nilai utama LQR sebagai kontroler berbasis fungsi biaya, yaitu satu
 implementasi dapat dikonfigurasi ulang untuk prioritas yang berbeda hanya dengan mengganti
 matriks $Q$.
-
-Utilisasi memori berhasil terbaca dengan rata-rata 45--50\% namun tidak ditampilkan pada
-grafik ini karena variasinya sangat kecil antar kontroler dan hampir tidak dipengaruhi
-oleh perubahan preset $Q$, sehingga tidak memberikan informasi pembeda yang berarti.
 
 \subsection{Robustness Lintas Mesin dan Konfigurasi}
 \label{sec:robustness}

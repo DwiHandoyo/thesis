@@ -1,0 +1,11 @@
+\section{Conclusion}
+
+This paper formulated data synchronization in a CQRS architecture as a discrete-time linear MIMO control problem and proposed an LQR-based controller that simultaneously regulates the message backlog and the read-database resource pressure by adjusting the batch size and poll interval. The state-space model is identified from open-loop measurements, and the LQR gain is derived offline from a quadratic cost that makes the trade-off between consistency and resource usage explicit through $Q$ and $R$.
+
+Across five synthetic load patterns and three weighting configurations, the proposed controller achieves the lowest mean and max normalized regret compared to static, rule-based, and PID baselines, suggesting that an explicit model-based approach is both more accurate and more robust to changes in operational priorities than threshold heuristics.
+
+Future work will extend the framework along three directions: (i) supporting multiple read replicas and multiple consumer topics, which introduces discrete switching dynamics not covered by the present linear model; (ii) online identification so that $A$ and $B$ track slow drifts in the system; and (iii) replacing the linear model with a piecewise-linear or learned dynamics to widen the validity region of the controller.
+
+\section*{Acknowledgments}
+
+The authors thank the School of Electrical Engineering and Informatics, Institut Teknologi Bandung, for the computing resources used to run the experiments.

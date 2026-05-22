@@ -1,0 +1,19 @@
+\section{Introduction}
+
+Modern distributed systems face growing data volumes and tighter response-time requirements as the number of users and services scales \cite{kleppmann2017}. To support concurrent read and write workloads, the Command Query Responsibility Segregation (CQRS) pattern has become a widely adopted approach that separates write (\textit{command}) and read (\textit{query}) paths, allowing each side to be optimized independently \cite{fowler2011,munonye2023}.
+
+The separation, however, introduces a new burden: the read model must be kept synchronized with the write model. In typical implementations, write-side changes are emitted as events and propagated to the read side through a message broker, often using event sourcing \cite{morris2023}. Synchronization becomes asynchronous and exposes the system to \textit{eventual consistency}, where the read model temporarily lags behind the write model \cite{vogels2009,bailis2012}.
+
+Two parameters dominate this asynchronous path: \textit{batch size} and \textit{poll interval}. Under high load, larger batches amortize per-message overhead such as network transfers, compression, and log writes, thus improving throughput. Larger batches, however, raise end-to-end latency because consumers wait longer to accumulate events, and large batches concentrate load on the read database, causing CPU, memory, and I/O spikes. Small batches reduce latency but inflate per-message overhead and increase commit frequency \cite{wu2019,rahman2010}. Setting these parameters statically is therefore unable to track the workload over time.
+
+Prior work has explored dynamic batching. Wu et al. \cite{wu2020} proposed a reactive batching strategy in Apache Kafka that adapts batch size based on latency and throughput metrics. Das et al. \cite{das2018} introduced adaptive micro-batching in Spark Structured Streaming. These approaches improve performance, but most rely on heuristics or threshold rules tied to a single observed metric. They do not provide a formal framework for jointly balancing multiple competing variables such as backlog, latency, CPU, and memory utilization, and they offer no explicit notion of optimality.
+
+This paper formulates CQRS synchronization as a discrete-time linear dynamic system and applies a Linear Quadratic Regulator (LQR) to compute control actions for the batch size and poll interval. The state vector aggregates backlog, CPU, memory, and I/O utilization, while the cost function captures the trade-off between synchronization quality and resource usage through the weighting matrices $Q$ and $R$. The contributions of this work are:
+
+\begin{enumerate}
+    \item A state-space formulation of CQRS event-sink synchronization as a MIMO control problem, including a measurement procedure for end-to-end latency via manual offset commit.
+    \item An LQR controller whose gain matrix is derived from an identified linear model of the sink dynamics and whose cost function explicitly encodes the trade-off between backlog reduction and resource pressure.
+    \item An empirical comparison against static, rule-based, and PID baselines on five workload patterns (step, ramp, impulse, periodic step, low step) and a sensitivity analysis over three weighting configurations using \textit{normalized regret}.
+\end{enumerate}
+
+The remainder of this paper is organized as follows. Section~2 reviews CQRS, stream processing, and control approaches. Section~3 presents the system model and the LQR-based controller. Section~4 describes the experimental setup, load scenarios, and evaluation metrics. Section~5 reports and discusses the results. Section~6 concludes.

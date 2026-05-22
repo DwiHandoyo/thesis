@@ -1,0 +1,39 @@
+\section{Related Work}
+
+\subsection{CQRS and Event-Driven Synchronization}
+
+CQRS separates command and query responsibilities so that each model can be tuned for its access pattern, improving scalability and modularity \cite{fowler2011,zhanglong2017}. The cost of this separation is the need to keep the read model consistent with the write model. The dominant mechanism is event sourcing, where every write produces an immutable event that is later replayed against the read model through a message broker \cite{kleppmann2017,munonye2023}. Brokers such as Apache Kafka and RabbitMQ decouple producer and consumer, but they also introduce backlog dynamics when the consumption rate cannot keep up with production.
+
+\subsection{Stream Processing and Micro-Batching}
+
+Practical event consumers process records in micro-batches rather than one at a time to amortize per-event overhead \cite{das2018}. Batch size and processing frequency control a fundamental trade-off: larger batches raise throughput and lower CPU cost per event but delay propagation, while smaller batches reduce latency at the cost of higher commit and scheduling overhead \cite{wu2019,wu2020}. Recent work shows that adaptive batching outperforms static configurations, but most proposals tune a single parameter based on a single metric and do not generalize to multiple coupled variables.
+
+\subsection{Feedback Control for Software Systems}
+
+Feedback control has been applied to software performance management for tasks ranging from cloud autoscaling to memory allocation \cite{hellerstein2004}. The classical Proportional-Integral-Derivative (PID) controller computes a corrective action from the error between a setpoint and the measured signal:
+\begin{equation}
+u(t) = K_p\,e(t) + K_i \int_0^t e(\tau)\,d\tau + K_d \frac{de(t)}{dt}.
+\label{eq:pid}
+\end{equation}
+PID is simple and well understood but is fundamentally Single-Input Single-Output (SISO). Applying PID to CQRS synchronization requires multiple independent loops, one per variable, and does not capture interactions among backlog, CPU, memory, and I/O.
+
+\subsection{State-Space Modeling and the Linear Quadratic Regulator}
+
+A linear time-invariant system is described in state-space form as
+\begin{align}
+x_{t+1} &= A x_t + B u_t,\label{eq:state-eq}\\
+y_t &= C x_t + D u_t,\label{eq:obs-eq}
+\end{align}
+where $x_t$ is the system state, $u_t$ is the control input, and $A,B,C,D$ are constant matrices \cite{ogata2010}. The LQR is an optimal control law that minimizes the quadratic cost
+\begin{equation}
+J = \sum_{t=0}^{\infty} \left( x_t^{T} Q x_t + u_t^{T} R u_t \right),
+\label{eq:lqr-cost}
+\end{equation}
+with $Q \succeq 0$ penalizing state deviation and $R \succ 0$ penalizing control effort. The optimal feedback law $u_t = -K x_t$ is obtained by solving the Discrete Algebraic Riccati Equation (DARE) \cite{anderson1989}. Unlike PID, LQR is naturally MIMO and lets the designer specify trade-offs among competing objectives explicitly through $Q$ and $R$, which makes it a natural fit for CQRS synchronization where multiple state variables and multiple control inputs must be coordinated.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{II_3_1__kontrol_lqr.png}
+    \caption{LQR feedback control loop. The controller computes $u_t=-Kx_t$ from the measured system state.}
+    \label{fig:lqr-block}
+\end{figure}

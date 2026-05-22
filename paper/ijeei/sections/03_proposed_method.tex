@@ -1,0 +1,96 @@
+\section{Proposed Method}
+
+\subsection{Problem Abstraction}
+
+The CQRS synchronization pipeline is abstracted as a discrete-time dynamic system. The \textit{message sink}, which consumes events from the broker and applies them to the read database, is the natural site for control because it directly governs both the rate at which the backlog is drained and the load placed on the read side. Two parameters are exposed for control: the \textit{batch size} $b$ and the \textit{poll interval} $p$.
+
+Let the control vector be
+\begin{equation}
+\mathbf{u}_t = \begin{bmatrix} b_t \\ p_t \end{bmatrix},
+\label{eq:control-vec}
+\end{equation}
+and let the state vector be
+\begin{equation}
+\mathbf{x}_t = \begin{bmatrix} n_t \\ c_t \\ m_t \\ o_t \end{bmatrix},
+\label{eq:state-vec}
+\end{equation}
+where $n_t$ is the message backlog at the broker, $c_t$ is the read-database CPU utilization, $m_t$ is the memory utilization, and $o_t$ is the I/O activity at the read database.
+
+Synchronization latency $\ell_t$ is treated as an \textit{observation}, not a state component. It enters the system through the output matrix $C$:
+\begin{equation}
+\ell_t = t_{\text{ack}} - t_{\text{produce}},
+\label{eq:latency}
+\end{equation}
+where $t_{\text{produce}}$ is the time the event was produced on the write side and $t_{\text{ack}}$ is the time the read database acknowledged the corresponding batch write. Measurement is implemented through \textit{manual offset commit} at the broker: the consumer defers committing the offset of a batch until the read database confirms persistence, so $\ell_t$ captures the full end-to-end propagation time including queue waiting and batch processing. Preliminary experiments showed that placing $\ell_t$ inside $\mathbf{x}_t$ causes the controller to suppress the batch size aggressively, hence the choice to keep it observation-only.
+
+\subsection{State-Space Model}
+
+The system is modeled as a discrete-time linear MIMO system around a nominal operating point:
+\begin{equation}
+\mathbf{x}_{t+1} = A\,\mathbf{x}_t + B\,\mathbf{u}_t + \mathbf{w}_t,
+\label{eq:dynamics}
+\end{equation}
+where $\mathbf{w}_t$ collects unmodeled disturbances such as random workload variations. The matrices $A \in \mathbb{R}^{4 \times 4}$ and $B \in \mathbb{R}^{4 \times 2}$ are identified from open-loop experiments using ordinary least squares on the recorded state-input pairs (see Section~4). The dynamics in (\ref{eq:dynamics}) are nonlinear in reality, but two assumptions justify the linear approximation: (i) the system is operated within a bounded range around a steady operating point, and (ii) workload variation within a single control interval is small (the \textit{quasi-stationary} assumption) \cite{ogata2010,hellerstein2004}.
+
+\subsection{Cost Function Design}
+
+The control objective is to drive the backlog and resource utilization toward zero while keeping the control effort moderate. This is expressed as a quadratic cost:
+\begin{equation}
+J = \sum_{t=0}^{\infty} \left( \mathbf{x}_t^{T} Q\,\mathbf{x}_t + \mathbf{u}_t^{T} R\,\mathbf{u}_t \right),
+\label{eq:cost}
+\end{equation}
+with $Q = \text{diag}(q_n, q_c, q_m, q_o)$ a positive semi-definite weight on the state components and $R = \text{diag}(r_b, r_p)$ a positive definite weight on the control inputs. Increasing $q_n$ relative to $q_c$ pushes the controller to drain the backlog more aggressively, while increasing $r_b$ slows the rate at which the batch size is allowed to change.
+
+To make the weight choice principled, the state and control variables are first normalized:
+\begin{equation}
+\tilde{x}_i = (x_i - \mu_i)/\sigma_i, \qquad \tilde{u}_j = (u_j - \mu_j)/\sigma_j,
+\label{eq:normalize}
+\end{equation}
+with the normalization constants listed in Table~\ref{tab:normalization}. The diagonal entries of $Q$ and $R$ are then selected following Bryson's rule, with three configurations summarized in Section~4 to support a sensitivity analysis.
+
+\begin{table}[H]
+\centering
+\caption{State and control normalization constants}
+\label{tab:normalization}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Variable} & \textbf{Mean ($\mu$)} & \textbf{Std ($\sigma$)} \\
+\midrule
+Backlog $n$           & \normQueueMean      & \normQueueStd \\
+Batch size $b$        & \normBatchMean      & \normBatchStd \\
+Inverse poll int.\ $1/p$ & \normInvPollMean & \normInvPollStd \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{LQR Controller}
+
+The optimal feedback law that minimizes (\ref{eq:cost}) under the dynamics (\ref{eq:dynamics}) is
+\begin{equation}
+\mathbf{u}_t = -K\,\mathbf{x}_t,
+\label{eq:control-law}
+\end{equation}
+where $K \in \mathbb{R}^{2 \times 4}$ is the LQR gain obtained from the solution $P$ of the Discrete Algebraic Riccati Equation
+\begin{equation}
+P = A^{T} P A - A^{T} P B (R + B^{T} P B)^{-1} B^{T} P A + Q,
+\label{eq:dare}
+\end{equation}
+giving $K = (R + B^{T} P B)^{-1} B^{T} P A$. The control law is computed once offline; at runtime the controller only evaluates a small matrix-vector product per cycle.
+
+The raw control vector is clipped to the operational range $[b_{\min}, b_{\max}] \times [p_{\min}, p_{\max}]$ established from a capacity benchmark (Section~4), and a saturation guard prevents the controller from issuing values that exceed the read database's safe operating envelope.
+
+\subsection{Baselines for Comparison}
+
+Four controllers are compared on identical workloads to isolate the contribution of LQR:
+
+\subsubsection{Static}
+Batch size and poll interval are fixed at the median values measured during the open-loop experiment. This baseline represents a conventionally tuned production deployment.
+
+\subsubsection{Rule-Based}
+A small set of threshold rules adjusts the batch size: if the backlog exceeds a high threshold, the batch grows by a step; if CPU utilization exceeds a high threshold, the batch shrinks. The rules represent common operational practice but cannot reason about multivariate trade-offs.
+
+\subsubsection{PID}
+A single-loop PID controller tracks the backlog with the batch size as its actuator. Gains are tuned by the Ziegler-Nichols method on the open-loop response.
+
+\subsubsection{LQR (Proposed)}
+The MIMO controller from (\ref{eq:control-law}) using $A$ and $B$ identified in Section~4.A and the cost function in (\ref{eq:cost}). Three weight configurations are evaluated: $Q_1$ prioritizes backlog, $Q_2$ prioritizes resource usage, and $Q_3$ balances both.

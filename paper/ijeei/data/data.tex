@@ -1,0 +1,65 @@
+% =============================================================================
+% Experimental data macros. Update these numbers when thesis data changes;
+% the paper picks them up automatically.
+% Mirrors the data-command pattern used in chapters/chapter-4.tex.
+% =============================================================================
+
+% --- Open-loop identification ---
+\newcommand{\openloopsamples}{8146}
+\newcommand{\openloopsteps}{122}
+\newcommand{\openloopinterval}{1}
+
+% --- Capacity benchmark ---
+\newcommand{\tfetchms}{203}
+\newcommand{\batchminCap}{3}
+\newcommand{\batchmaxCap}{2036}
+\newcommand{\pollminCap}{604}
+\newcommand{\pollmaxCap}{1599}
+\newcommand{\kneepoint}{500}
+\newcommand{\kneeCpu}{31.5}
+\newcommand{\docsizeKB}{0.463}
+
+% --- Test environment ---
+\newcommand{\escpus}{1.0}
+\newcommand{\esmemory}{1024 MB}
+\newcommand{\esjavaheap}{512 MB}
+\newcommand{\esversion}{8.10.0}
+\newcommand{\kafkaversion}{3.5}
+\newcommand{\pgversion}{15}
+
+% --- Closed-loop run ---
+\newcommand{\closedlooprun}{closed\_loop\_20260415\_231610}
+\newcommand{\closedloopsamples}{1930}
+
+% --- State normalization (LQR) ---
+\newcommand{\normQueueMean}{0}
+\newcommand{\normQueueStd}{5000}
+\newcommand{\normBatchMean}{250}
+\newcommand{\normBatchStd}{250}
+\newcommand{\normInvPollMean}{5.0}
+\newcommand{\normInvPollStd}{2.0}
+
+% --- Headline results (FILL after experiments) ------------------------------
+% Mean queue (backlog) under each controller on step load
+\newcommand{\meanQueueStatic}{TBD}
+\newcommand{\meanQueueRule}{TBD}
+\newcommand{\meanQueuePID}{TBD}
+\newcommand{\meanQueueLQR}{TBD}
+
+% Mean latency (ms)
+\newcommand{\meanLatStatic}{TBD}
+\newcommand{\meanLatRule}{TBD}
+\newcommand{\meanLatPID}{TBD}
+\newcommand{\meanLatLQR}{TBD}
+
+% Mean CPU (%)
+\newcommand{\meanCpuStatic}{TBD}
+\newcommand{\meanCpuRule}{TBD}
+\newcommand{\meanCpuPID}{TBD}
+\newcommand{\meanCpuLQR}{TBD}
+
+% Cost J (normalized regret), averaged across Q1, Q2, Q3
+\newcommand{\regretStatic}{TBD}
+\newcommand{\regretRule}{TBD}
+\newcommand{\regretPID}{TBD}
+\newcommand{\regretLQR}{TBD}

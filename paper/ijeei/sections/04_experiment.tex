@@ -1,0 +1,101 @@
+\section{Experimental Setup}
+
+\subsection{Test Environment}
+
+The test system implements a minimal CQRS pipeline with one write database, one message broker, one consumer (message sink), and one read database. Concretely, PostgreSQL~\pgversion{} is used as the write store and Debezium captures changes onto an Apache Kafka~\kafkaversion{} topic. A Python consumer applies events to an Elasticsearch~\esversion{} read index. The architecture is shown in Fig.~\ref{fig:test-arch}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{III_4_1__arsitektur_uji.png}
+    \caption{Test architecture. Control acts on the message sink only.}
+    \label{fig:test-arch}
+\end{figure}
+
+The read database is provisioned with~\escpus{} vCPU, \esmemory{} of memory, and \esjavaheap{} of Java heap. Hardware, software versions, and schemas are held constant across all experiments so that performance differences can be attributed to the controller. Before each run, the system is warmed up with default parameters until the backlog stabilizes, and only then is the controller engaged.
+
+\subsection{Capacity Benchmark and Operating Range}
+
+Before identification, a \textit{capacity benchmark} measures the system's throughput envelope. The batch size is swept over seven levels with a fixed poll interval, and for each level the achieved throughput, CPU utilization, and per-document indexing time are recorded over a 30-second window. The benchmark establishes:
+
+\begin{itemize}
+    \item An average document size of \docsizeKB~KB.
+    \item A Kafka round-trip time $t_{\text{fetch}} = \tfetchms$~ms.
+    \item A batch operating range $[\batchminCap, \batchmaxCap]$ and a poll-interval operating range $[\pollminCap, \pollmaxCap]$~ms.
+    \item A throughput knee around batch size $\kneepoint$ at $\kneeCpu\%$ CPU utilization.
+\end{itemize}
+
+The controller's saturation bounds are anchored on this empirically measured envelope, not on intuitive guesses.
+
+\subsection{Open-Loop Identification}
+
+An open-loop experiment collects $\openloopsamples$ samples over $\openloopsteps$ control steps at a sampling interval of $\openloopinterval$~s. The batch size and poll interval are stepped through pre-planned combinations while the state vector $\mathbf{x}_t$ is logged. The matrices $A$ and $B$ in (\ref{eq:dynamics}) are then identified by ordinary least squares, and a residual analysis verifies that the linear approximation is acceptable within the operating range.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{heatmap_state_vs_control.png}
+    \caption{State-versus-control heatmap from the open-loop sweep. Cells show the steady-state value of each state variable for every $(b, p)$ combination, exposing the coupling that the controller must coordinate.}
+    \label{fig:openloop}
+\end{figure}
+
+\subsection{Load Scenarios}
+
+Five workload patterns exercise different controller behaviors:
+
+\begin{enumerate}
+    \item \textit{Step} -- a sudden increase to a high production rate; tests transient response.
+    \item \textit{Ramp} -- a gradual increase; tests tracking of slowly varying loads.
+    \item \textit{Impulse} -- a short burst; tests recovery from transient disturbance.
+    \item \textit{Periodic step} -- repeated steps between two levels; tests medium-term stability and oscillation.
+    \item \textit{Low step} -- a sustained low rate (100 msg/s); checks for over-reaction under light load.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \begin{tabular}{cc}
+        \includegraphics[width=0.46\textwidth]{III_4_2_a__skenario_step.png} &
+        \includegraphics[width=0.46\textwidth]{III_4_2_b__skenario_ramp.png} \\
+        (a) Step & (b) Ramp \\[0.4em]
+        \includegraphics[width=0.46\textwidth]{III_4_2_c__skenario_impulse.png} &
+        \includegraphics[width=0.46\textwidth]{III_4_2_d__skenario_periodic.png} \\
+        (c) Impulse & (d) Periodic step
+    \end{tabular}
+    \caption{Synthetic load patterns used in the evaluation.}
+    \label{fig:load-patterns}
+\end{figure}
+
+\subsection{Evaluation Metrics}
+
+Four metric groups are tracked, summarized in Table~\ref{tab:metrics}.
+
+\begin{table}[H]
+\centering
+\caption{Evaluation metrics used to compare controllers}
+\label{tab:metrics}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Group} & \textbf{Metrics} \\
+\midrule
+Core synchronization & Mean / max backlog; recovery time; mean / max latency; CPU, memory, I/O utilization \\
+Control dynamics     & Rise time; overshoot; settling time \\
+Processing efficiency & Throughput; CPU efficiency (msg/s/\%CPU); memory efficiency \\
+Control cost          & Total $J$; state cost $x^{T}Qx$; control cost $u^{T}Ru$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Sensitivity Analysis}
+
+Because the absolute value of $J$ depends on the chosen $Q$ and $R$, conclusions drawn under a single configuration may not generalize. Three configurations are evaluated:
+
+\begin{itemize}
+    \item $Q_1$: heavy weight on backlog (priority on consistency).
+    \item $Q_2$: heavy weight on CPU and I/O (priority on resource frugality).
+    \item $Q_3$: balanced weights.
+\end{itemize}
+$R$ is held constant so that observed differences in $J$ reflect only the state-priority shift. For each configuration $k$ and each method $i$, the \textit{normalized regret} is computed as
+\begin{equation}
+\hat{J}_i^{(k)} = \frac{J_i^{(k)} - J_{\min}^{(k)}}{J_{\min}^{(k)}},
+\label{eq:nregret}
+\end{equation}
+where $J_{\min}^{(k)}$ is the best (lowest) $J$ across the four methods under configuration $k$. Two summary statistics are used: \textit{mean regret} $\bar{\hat{J}}_i = \frac{1}{K}\sum_k \hat{J}_i^{(k)}$, which favors methods that are consistently close to optimal, and \textit{max regret} $\hat{J}_i^{\max} = \max_k \hat{J}_i^{(k)}$, which favors robustness against the worst configuration.

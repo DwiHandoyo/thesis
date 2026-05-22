@@ -429,6 +429,10 @@ INPUT ./resources/IV_R4__state_across_q_full.png
 INPUT ./resources/IV_R4__state_across_q_full.png
 INPUT ./resources/IV_R4__state_across_q_full.png
 INPUT ./resources/IV_R4__state_across_q_full.png
+INPUT ./resources/IV_R4b__state_across_q_baseline.png
+INPUT ./resources/IV_R4b__state_across_q_baseline.png
+INPUT ./resources/IV_R4b__state_across_q_baseline.png
+INPUT ./resources/IV_R4b__state_across_q_baseline.png
 INPUT ./resources/IV_R9__cross_experiment_cost.png
 INPUT ./resources/IV_R9__cross_experiment_cost.png
 INPUT ./resources/IV_R9__cross_experiment_cost.png
