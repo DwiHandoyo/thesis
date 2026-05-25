@@ -46,7 +46,7 @@ Perilaku antrian pesan pada message broker, termasuk seberapa cepat pesan diprod
 
 Sinkronisasi data merupakan komponen kunci dalam sistem terdistribusi yang memisahkan komponen penghasil data dan komponen yang mengonsumsi data secara asinkron.
 Pada sistem berskala besar, perubahan data tidak selalu dapat langsung direfleksikan ke seluruh komponen sistem secara serentak, sehingga diperlukan mekanisme propagasi perubahan yang mampu menangani perbedaan laju produksi dan konsumsi data.
-Kondisi ini menyebabkan sinkronisasi data tidak hanya bergantung pada konsistensi logis, tetapi juga pada karakteristik waktu, beban sistem, dan kapasitas pemrosesan masing-masing komponen (Tanenbaum dan van Steen, 2017).
+Akibatnya, sinkronisasi data bergantung pada konsistensi logis sekaligus pada karakteristik waktu, beban sistem, dan kapasitas pemrosesan tiap komponen (Tanenbaum dan van Steen, 2017).
 
 Dalam konteks arsitektur berbasis event-driven, sinkronisasi data umumnya dilakukan melalui mekanisme stream processing, di mana setiap perubahan data direpresentasikan sebagai event yang dipublikasikan ke message broker.
 Event-event ini kemudian diproses secara berurutan atau berkelompok oleh komponen konsumer untuk memperbarui state pada sistem tujuan, seperti read model pada arsitektur CQRS.
@@ -87,7 +87,7 @@ Kondisi ini menunjukkan adanya trade-off antara kecepatan propagasi data dan efi
 
 Backlog muncul ketika laju produksi event melebihi kemampuan sistem dalam memproses event tersebut.
 Backlog bersifat dinamis dan dipengaruhi oleh pola beban kerja, pengaturan batch, serta kondisi sumber daya pada sistem tujuan.
-Peningkatan backlog tidak hanya meningkatkan latensi sinkronisasi, tetapi juga berpotensi memicu lonjakan utilisasi CPU, memori, dan operasi I/O pada database baca ketika batch diproses dalam jumlah besar (Tanenbaum dan van Steen, 2017).
+Peningkatan backlog memperbesar latensi sinkronisasi sekaligus berpotensi memicu lonjakan utilisasi CPU, memori, dan operasi I/O pada database baca ketika batch besar diproses (Tanenbaum dan van Steen, 2017).
 
 Penelitian terdahulu menunjukkan bahwa pengaturan batch secara statik sulit mempertahankan performa yang stabil pada kondisi beban yang berubah.
 Parameter batch yang optimal pada satu kondisi dapat menjadi tidak efektif pada kondisi lain, sehingga pengaturan batch dan pemantauan backlog perlu dipandang sebagai bagian dari sistem yang bersifat dinamis.
@@ -161,7 +161,7 @@ Dalam konteks sistem sinkronisasi data, status sistem \emph{x} dapat berupa util
 Matriks \emph{A} dan \emph{B} menggambarkan dinamika sistem, yaitu bagaimana sistem berubah sebagai akibat dari tindakan yang dilakukan.
 Sedangkan variabel pada vektor \emph{y} dapat termati secara langsung dan biasanya merupakan \emph{subset} dari \emph{x}.
 
-Dengan pendekatan ini, kita tidak hanya bereaksi terhadap kondisi saat ini, tetapi juga mengoptimalkan tindakan agar sistem tetap berada dalam kondisi yang stabil dan efisien.
+Pendekatan ini melangkah lebih jauh dari sekadar bereaksi terhadap kondisi saat ini, yaitu dengan mengoptimalkan tindakan agar sistem tetap stabil dan efisien.
 Di sinilah pendekatan kontrol optimal seperti LQR menjadi sangat relevan.
 
 \subsection{Linear Quadratic Regulator}

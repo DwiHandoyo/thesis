@@ -29,7 +29,7 @@ Hal ini sejalan dengan temuan Leonarczyk (2025) yang meneliti self-adaptive micr
 Penelitian tersebut menunjukkan bahwa ukuran batch memiliki pengaruh langsung terhadap konsumsi memori, efisiensi transfer data, dan latensi pemrosesan.
 Jika batch terlalu besar, maka sistem mengalami lonjakan penggunaan resource dan latensi yang signifikan, sedangkan batch terlalu kecil meningkatkan overhead penjadwalan.
 Studi pada \emph{Micro-batch and data frequency for stream processing on multi-cores} oleh Adriano, dkk. (2022) juga mengamati bahwa pada beban kerja dengan frekuensi data variatif, ukuran batch yang fleksibel membantu menjaga efisiensi CPU ketika beban puncak.
-Hasil ini memperkuat pandangan bahwa pengaturan ukuran batch yang adaptif merupakan kunci dalam menjaga keseimbangan antara performa dan efisiensi sumber daya.
+Temuan-temuan tersebut menunjukkan bahwa pengaturan ukuran batch yang adaptif menjadi kunci untuk menjaga trade-off antara performa dan efisiensi sumber daya.
 
 Beberapa penelitian terdahulu telah mencoba menangani trade-off ini melalui pendekatan dynamic batching.
 Wu, dkk. (2020) mengusulkan reactive batching strategy pada Apache Kafka, yang menyesuaikan ukuran batch berdasarkan metrik sistem seperti latensi dan throughput.

@@ -33,7 +33,7 @@ Untuk memahami perilaku sistem tersebut, beberapa variabel dapat dianggap sebaga
 Backlog event menjadi indikator utama yang menggambarkan selisih antara laju produksi dan laju konsumsi pada saat itu.
 Latensi pemrosesan event menunjukkan waktu yang dibutuhkan untuk memproses sebuah perubahan dan sangat dipengaruhi oleh besarnya batch, kapasitas komputasi, serta tingkat kontensi sumber daya.
 Selain itu, utilisasi CPU atau memori pada komponen konsumer juga merefleksikan kapasitas sistem dalam merespons beban tambahan.
-Variabel-variabel ini tidak hanya merepresentasikan kondisi sesaat, tetapi juga menentukan apakah sistem akan stabil atau mengalami akumulasi backlog secara terus-menerus.
+Variabel-variabel ini merepresentasikan kondisi sesaat sekaligus menentukan apakah sistem akan stabil atau terus menumpuk backlog.
 
 Di sisi lain, variabel yang dapat dikendalikan atau \emph{control variables} meliputi ukuran batch dan interval polling pada konsumer.
 Kedua parameter ini secara langsung mengatur ritme konsumsi data dan besarnya unit kerja yang diproses dalam setiap siklus.
@@ -48,7 +48,7 @@ Oleh karena itu, diperlukan model yang mampu menangkap hubungan dinamis antara s
 
 Analisis ini menunjukkan bahwa inti permasalahan bukan sekadar menentukan nilai batch atau interval polling yang paling cepat atau paling efisien, tetapi menemukan cara untuk menjaga keseimbangan antara backlog, latensi, dan utilisasi sumber daya dalam kondisi sistem yang terus berubah.
 Model pengendalian dibutuhkan untuk menjaga agar variabel state bergerak menuju kondisi yang stabil dan terkendali, terlepas dari variasi beban.
-Hasil analisis inilah yang menjadi dasar untuk merancang pendekatan pengendalian yang akan dibahas pada bagian selanjutnya.
+Hasil analisis ini menjadi dasar perancangan pendekatan pengendalian pada bagian berikutnya.
 
 \section{Analisis Solusi}
 
@@ -133,8 +133,8 @@ Validitas asumsi ini kemudian diuji melalui eksperimen \emph{open-loop} pada tah
 
 \subsection{Perancangan Fungsi Biaya dan Definisi Keseimbangan}
 
-Tujuan pengendalian dalam penelitian ini adalah menjaga keseimbangan antara kecepatan sinkronisasi data dan efisiensi penggunaan sumber daya.
-Keseimbangan tersebut tidak dapat direpresentasikan oleh satu metrik tunggal, melainkan merupakan kompromi antara beberapa tujuan yang saling bertentangan, seperti minimisasi backlog, pengurangan latensi sinkronisasi, dan pembatasan utilisasi sumber daya agar tidak melampaui kapasitas sistem (Bailis dkk., 2012).
+Tujuan pengendalian dalam penelitian ini adalah menyeimbangkan kecepatan sinkronisasi data dengan efisiensi penggunaan sumber daya.
+Trade-off tersebut tidak dapat diwakili oleh satu metrik tunggal, karena melibatkan beberapa tujuan yang saling bertentangan, seperti minimisasi backlog, pengurangan latensi sinkronisasi, dan pembatasan utilisasi sumber daya agar tidak melampaui kapasitas sistem (Bailis dkk., 2012).
 
 Untuk merepresentasikan tujuan tersebut secara formal, digunakan fungsi biaya kuadratik:
 
@@ -150,7 +150,7 @@ Hal yang sama berlaku untuk setiap variabel state lainnya.
 Secara bersamaan, aksi kontrol yang diterapkan ($u_t$, yaitu batch size dan poll interval yang dipilih) juga dihitung biayanya melalui matriks $R$, agar sistem tidak mengambil tindakan yang terlalu ekstrem.
 Nilai dari kedua komponen ini dijumlahkan untuk setiap langkah waktu, dan total akumulasinya itulah yang membentuk $J$.
 Komponen pertama dari fungsi biaya dengan demikian memberikan penalti terhadap deviasi kondisi sistem dari keadaan yang diinginkan, sementara komponen kedua memberikan penalti terhadap besarnya aksi kontrol yang diterapkan.
-Dengan formulasi ini, sistem tidak hanya diarahkan untuk mengurangi backlog atau utilisasi sumber daya, tetapi juga menghindari perubahan parameter sinkronisasi yang terlalu agresif atau terlalu lambat.
+Dengan formulasi ini, sistem diarahkan untuk mengurangi backlog dan utilisasi sumber daya sekaligus menghindari perubahan parameter sinkronisasi yang terlalu agresif maupun terlalu lambat.
 
 Makna optimal dalam kerangka LQR didefinisikan sebagai keputusan kontrol yang meminimalkan fungsi biaya tersebut sepanjang horizon waktu, sehingga menghasilkan kompromi terbaik antara perbaikan kondisi sistem dan besarnya perubahan parameter sinkronisasi.
 Bobot pada matriks $Q$ mencerminkan tingkat kepentingan relatif masing-masing variabel state, misalnya penekanan yang lebih besar pada backlog akan mendorong sistem untuk mempercepat sinkronisasi, sementara penekanan pada utilisasi sumber daya akan menghasilkan perilaku pengendalian yang lebih konservatif.
@@ -250,7 +250,7 @@ Selama satu periode pengamatan, aksi kontrol dijaga tetap konstan untuk setiap k
 Nilai fungsi biaya kemudian dihitung dari respons tersebut, dan kombinasi parameter yang menghasilkan nilai fungsi biaya minimum ditetapkan sebagai aksi kontrol optimal untuk kondisi sistem tersebut.
 
 Pendekatan ini memastikan bahwa definisi $u^*(t)$ konsisten dengan tujuan pengendalian LQR, meskipun diperoleh melalui evaluasi empiris.
-Dengan demikian, $u^*(t)$ merepresentasikan aksi kontrol yang paling seimbang untuk kondisi sistem tertentu dalam batas asumsi dan horizon pengamatan yang digunakan, serta dapat digunakan sebagai acuan dalam analisis performa dan perbandingan pada tahap evaluasi.
+Dengan demikian, $u^*(t)$ menjadi aksi kontrol paling seimbang untuk kondisi sistem tertentu dalam batas asumsi dan horizon pengamatan yang dipakai, dan dipakai sebagai acuan pada analisis performa serta perbandingan di tahap evaluasi.
 
 \section{Desain Eksperimen dan Skenario Pengujian}
 
@@ -343,7 +343,7 @@ Hasil eksperimen dievaluasi menggunakan seluruh metrik yang telah didefinisikan 
 
 \section{Metrik Evaluasi Kerja}
 
-Evaluasi kinerja dalam penelitian ini dilakukan untuk menilai sejauh mana mekanisme pengendalian mampu menjaga keseimbangan antara kualitas sinkronisasi data dan efisiensi penggunaan sumber daya sistem.
+Evaluasi kinerja pada penelitian ini menilai sejauh mana pengendali menyeimbangkan kualitas sinkronisasi data dengan efisiensi penggunaan sumber daya.
 Oleh karena itu, metrik evaluasi dipilih secara selektif agar dapat merepresentasikan tujuan pengendalian yang telah dirumuskan pada tahap perancangan solusi, serta mampu menangkap respons sistem pada berbagai kondisi beban dan pola perubahan beban.
 
 Metrik evaluasi dikelompokkan berdasarkan perannya dalam analisis kinerja sistem, meliputi metrik inti kinerja sinkronisasi, metrik dinamika kontrol, metrik efisiensi pemrosesan, dan metrik biaya kontrol.
@@ -352,7 +352,7 @@ Seluruh metrik diukur secara periodik selama eksperimen dan digunakan secara kon
 
 \subsection{Metrik Inti Kinerja Sinkronisasi}
 
-Metrik inti kinerja sinkronisasi digunakan untuk mengevaluasi kualitas dasar proses sinkronisasi data pada arsitektur CQRS.
+Kelompok metrik inti ini menilai kualitas dasar proses sinkronisasi data pada arsitektur CQRS.
 Metrik ini dipilih karena secara langsung merepresentasikan tujuan utama pengendalian, yaitu menjaga konsistensi data dan kestabilan sistem pada berbagai kondisi beban.
 Seluruh metrik inti diukur secara periodik selama eksperimen dan dianalisis baik pada kondisi tunak maupun transien.
 
@@ -403,7 +403,7 @@ Metrik ini digunakan untuk memastikan bahwa pengendalian mampu menjaga keseimban
 
 \subsection{Metrik Dinamika Kontrol}
 
-Metrik dinamika kontrol digunakan untuk mengevaluasi karakteristik respons sistem terhadap perubahan beban, khususnya pada kondisi transien seperti pola step, ramp, impulse, dan step periodik.
+Kelompok metrik dinamika kontrol menilai karakteristik respons sistem terhadap perubahan beban, terutama pada kondisi transien seperti pola step, ramp, impulse, dan step periodik.
 Berbeda dengan metrik inti yang menilai kualitas sinkronisasi secara umum, metrik dinamika kontrol berfokus pada bagaimana sistem bereaksi terhadap gangguan dan seberapa cepat sistem kembali ke kondisi yang diinginkan.
 Metrik ini sangat relevan dalam konteks pengendalian berbasis LQR karena secara langsung mencerminkan kualitas respons kendali yang dihasilkan.
 
@@ -443,8 +443,8 @@ Settling time yang singkat tanpa overshoot berlebihan menunjukkan karakteristik 
 
 \subsection{Metrik Efisiensi Pemrosesan}
 
-Metrik efisiensi pemrosesan digunakan untuk mengevaluasi sejauh mana mekanisme pengendalian sinkronisasi mampu meningkatkan kinerja pemrosesan event tanpa mengorbankan efisiensi penggunaan sumber daya.
-Dalam konteks sistem CQRS, pengendalian yang efektif tidak hanya ditunjukkan oleh penurunan backlog atau latensi, tetapi juga oleh kemampuan sistem dalam memproses event secara efisien dengan sumber daya yang tersedia.
+Kelompok metrik efisiensi pemrosesan menilai sejauh mana pengendalian sinkronisasi meningkatkan kinerja pemrosesan event tanpa mengorbankan efisiensi penggunaan sumber daya.
+Pada sistem CQRS, pengendalian yang efektif dicirikan oleh penurunan backlog dan latensi sekaligus kemampuan memproses event secara efisien dengan sumber daya yang ada.
 
 Evaluasi efisiensi pemrosesan penting karena pengendalian yang terlalu agresif dapat meningkatkan throughput dalam jangka pendek, tetapi berpotensi menimbulkan pemborosan sumber daya atau tekanan berlebihan pada sistem.
 Oleh karena itu, metrik efisiensi digunakan untuk menilai keseimbangan antara kapasitas pemrosesan yang dicapai dan biaya sumber daya yang dikeluarkan selama proses sinkronisasi berlangsung.
@@ -454,7 +454,7 @@ Nilai throughput yang tinggi menunjukkan bahwa sistem mampu menangani laju event
 
 Efisiensi CPU dan efisiensi memori digunakan untuk mengevaluasi seberapa efektif sumber daya sistem dimanfaatkan dalam mendukung proses sinkronisasi.
 Nilai efisiensi yang tinggi menunjukkan bahwa peningkatan throughput dicapai dengan penggunaan sumber daya yang relatif efisien.
-Dengan mengombinasikan metrik throughput dan efisiensi sumber daya, evaluasi kinerja tidak hanya berfokus pada kecepatan pemrosesan, tetapi juga pada keberlanjutan operasional sistem.
+Kombinasi metrik throughput dan efisiensi sumber daya membuat evaluasi kinerja mencakup kecepatan pemrosesan sekaligus keberlanjutan operasional sistem.
 
 \begin{table}[H]
     \centering
@@ -476,7 +476,7 @@ Dengan mengombinasikan metrik throughput dan efisiensi sumber daya, evaluasi kin
 
 \subsection{Metrik Biaya Kontrol}
 
-Metrik biaya kontrol digunakan untuk mengevaluasi kinerja pengendalian dari sudut pandang optimasi yang mendasari perancangan Linear Quadratic Regulator (LQR).
+Kelompok metrik biaya kontrol menilai kinerja pengendalian dari sudut pandang optimasi yang mendasari perancangan Linear Quadratic Regulator (LQR).
 Berbeda dengan metrik kinerja dan efisiensi yang menilai dampak pengendalian pada sistem secara eksternal, metrik biaya kontrol menilai sejauh mana kebijakan kontrol yang diterapkan selaras dengan tujuan optimasi yang telah diformulasikan melalui fungsi biaya.
 
 Evaluasi biaya kontrol penting untuk memastikan bahwa perbaikan kinerja sinkronisasi tidak dicapai melalui aksi kontrol yang berlebihan.

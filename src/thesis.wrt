@@ -55,8 +55,8 @@
 \@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.1}Kontrol PID (Proportional-Integral-Derivative)}{15}{subsection.2.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {II.4.2}Teori Kontrol pada Sistem Perangkat Lunak}{16}{subsection.2.4.2}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.2}Teori Kontrol pada Sistem Perangkat Lunak}{16}{subsection.2.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.3}Linear Quadratic Regulator}{18}{subsection.2.4.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.3}Linear Quadratic Regulator}{18}{subsection.2.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {II.4.3}Linear Quadratic Regulator}{17}{subsection.2.4.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {II.4.3}Linear Quadratic Regulator}{17}{subsection.2.4.3}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {II.3}{\ignorespaces Kontrol LQR}}{19}{figure.caption.7}\protected@file@percent }
 \@writefile{toc}{\contentsline {chapter}{\numberline {III}Analisis dan Solusi}{22}{chapter.3}\protected@file@percent }
 \@writefile{atoc}{\contentsline {chapter}{\numberline {III}Analisis dan Solusi}{22}{chapter.3}\protected@file@percent }
@@ -67,16 +67,16 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {III.1}{\ignorespaces Pengaruh ukuran batch terhadap rata-rata \emph {latency} (Wu, 2020)}}{24}{figure.caption.8}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {III.2}Analisis Solusi}{25}{section.3.2}\protected@file@percent }
 \@writefile{atoc}{\contentsline {section}{\numberline {III.2}Analisis Solusi}{25}{section.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{26}{subsection.3.2.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{26}{subsection.3.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{25}{subsection.3.2.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.1}Abstraksi Sistem dan Pemodelan State-Space}{25}{subsection.3.2.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {III.2.2}Perancangan Fungsi Biaya dan Definisi Keseimbangan}{28}{subsection.3.2.2}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.2}Perancangan Fungsi Biaya dan Definisi Keseimbangan}{28}{subsection.3.2.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {III.2.3}Kontrol Optimal Linear Quadratic Regulator (LQR)}{29}{subsection.3.2.3}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.3}Kontrol Optimal Linear Quadratic Regulator (LQR)}{29}{subsection.3.2.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {III.2.4}Pendekatan Pengendalian yang Dibandingkan}{30}{subsection.3.2.4}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {III.2.4}Pendekatan Pengendalian yang Dibandingkan}{30}{subsection.3.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.1}Kontrol Statik (Fixed)}{31}{subsubsection.3.2.4.1}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsubsection}{\numberline {III.2.4.1}Kontrol Statik (Fixed)}{31}{subsubsection.3.2.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.1}Kontrol Statik (Fixed)}{30}{subsubsection.3.2.4.1}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsubsection}{\numberline {III.2.4.1}Kontrol Statik (Fixed)}{30}{subsubsection.3.2.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.2}Kontrol Berbasis Aturan (Rule-Based)}{31}{subsubsection.3.2.4.2}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsubsection}{\numberline {III.2.4.2}Kontrol Berbasis Aturan (Rule-Based)}{31}{subsubsection.3.2.4.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {III.2.4.3}Kontrol PID}{31}{subsubsection.3.2.4.3}\protected@file@percent }
@@ -161,32 +161,34 @@
 \@writefile{atoc}{\contentsline {section}{\numberline {IV.6}Hasil Eksperimen Closed-Loop}{62}{section.4.6}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.1}Setup Eksperimen}{62}{subsection.4.6.1}\protected@file@percent }
 \@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.1}Setup Eksperimen}{62}{subsection.4.6.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.2}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{63}{subsection.4.6.2}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.2}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{63}{subsection.4.6.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.3}Hasil Sumber Daya Penuh}{63}{subsection.4.6.3}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.3}Hasil Sumber Daya Penuh}{63}{subsection.4.6.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.8}{\ignorespaces Nilai rata-rata fungsi biaya $J$ pada konfigurasi sumber daya penuh}}{63}{table.caption.23}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.2}{\ignorespaces Fungsi biaya $J$ per pola beban pada preset Q1 (sumber daya penuh)}}{64}{figure.caption.24}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.3}{\ignorespaces \emph {Throughput} per kontroler pada preset Q1 (sumber daya penuh)}}{64}{figure.caption.25}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.4}{\ignorespaces \emph {Timeseries} panjang antrean per kontroler pada lima pola beban (preset Q1, sumber daya penuh)}}{65}{figure.caption.26}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Setengah}{66}{subsection.4.6.4}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Setengah}{66}{subsection.4.6.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.9}{\ignorespaces Nilai rata-rata fungsi biaya $J$ pada konfigurasi sumber daya setengah}}{66}{table.caption.27}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.5}{\ignorespaces Fungsi biaya $J$ per pola beban pada preset Q1 (sumber daya setengah)}}{66}{figure.caption.28}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.6}{\ignorespaces \emph {Timeseries} panjang antrean per kontroler pada lima pola beban (preset Q1, sumber daya setengah)}}{67}{figure.caption.29}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.10}{\ignorespaces Perbandingan \emph {regret} rata-rata pada dua konfigurasi sumber daya}}{68}{table.caption.30}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.5}Adaptasi Antar Preset Q}{68}{subsection.4.6.5}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.5}Adaptasi Antar Preset Q}{68}{subsection.4.6.5}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.7}{\ignorespaces Rata-rata variabel sistem LQR pada tiga preset $Q$ (sumber daya penuh)}}{68}{figure.caption.31}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.8}{\ignorespaces Rata-rata variabel sistem kontroler non-Q-aware pada tiga preset $Q$ (sumber daya penuh)}}{69}{figure.caption.32}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.6}Robustness Lintas Mesin dan Konfigurasi}{70}{subsection.4.6.6}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.6}Robustness Lintas Mesin dan Konfigurasi}{70}{subsection.4.6.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {IV.11}{\ignorespaces Rata-rata fungsi biaya $J$ (lintas Q1--Q3) per kontroler pada empat kombinasi mesin dan sumber daya}}{70}{table.caption.33}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {IV.9}{\ignorespaces Cost J kontroler lintas empat eksperimen}}{71}{figure.caption.34}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.7}Kasus Batas pada Sumber Daya Quarter}{71}{subsection.4.6.7}\protected@file@percent }
-\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.7}Kasus Batas pada Sumber Daya Quarter}{71}{subsection.4.6.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{Daftar Pustaka}{71}{subsection.4.6.7}\protected@file@percent }
-\@writefile{atoc}{\contentsline {chapter}{Daftar Pustaka}{71}{subsection.4.6.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.2}Arsitektur Kontroler ANN}{63}{subsection.4.6.2}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.2}Arsitektur Kontroler ANN}{63}{subsection.4.6.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.3}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{63}{subsection.4.6.3}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.3}Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}{63}{subsection.4.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Penuh}{64}{subsection.4.6.4}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.4}Hasil Sumber Daya Penuh}{64}{subsection.4.6.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.8}{\ignorespaces Nilai rata-rata fungsi biaya $J$ pada konfigurasi sumber daya penuh}}{64}{table.caption.23}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.2}{\ignorespaces Fungsi biaya $J$ per pola beban pada preset Q1 (sumber daya penuh)}}{65}{figure.caption.24}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.3}{\ignorespaces \emph {Throughput} per kontroler pada preset Q1 (sumber daya penuh)}}{65}{figure.caption.25}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.4}{\ignorespaces \emph {Timeseries} panjang antrean per kontroler pada lima pola beban (preset Q1, sumber daya penuh)}}{66}{figure.caption.26}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.5}Hasil Sumber Daya Setengah}{67}{subsection.4.6.5}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.5}Hasil Sumber Daya Setengah}{67}{subsection.4.6.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.9}{\ignorespaces Nilai rata-rata fungsi biaya $J$ pada konfigurasi sumber daya setengah}}{67}{table.caption.27}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.5}{\ignorespaces Fungsi biaya $J$ per pola beban pada preset Q1 (sumber daya setengah)}}{67}{figure.caption.28}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.6}{\ignorespaces \emph {Timeseries} panjang antrean per kontroler pada lima pola beban (preset Q1, sumber daya setengah)}}{68}{figure.caption.29}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.10}{\ignorespaces Perbandingan \emph {regret} rata-rata pada empat kombinasi mesin dan sumber daya}}{69}{table.caption.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.6}Adaptasi Antar Preset Q}{69}{subsection.4.6.6}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.6}Adaptasi Antar Preset Q}{69}{subsection.4.6.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.7}{\ignorespaces Rata-rata variabel sistem LQR dan ANN pada tiga preset $Q$ (sumber daya penuh)}}{70}{figure.caption.31}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.8}{\ignorespaces Rata-rata variabel sistem kontroler non-Q-aware pada tiga preset $Q$ (sumber daya penuh)}}{71}{figure.caption.32}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.7}Robustness Lintas Mesin dan Konfigurasi}{71}{subsection.4.6.7}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.7}Robustness Lintas Mesin dan Konfigurasi}{71}{subsection.4.6.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV.11}{\ignorespaces Rata-rata fungsi biaya $J$ (lintas Q1--Q3) per kontroler pada empat kombinasi mesin dan sumber daya}}{72}{table.caption.33}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {IV.9}{\ignorespaces Cost J kontroler lintas empat eksperimen}}{73}{figure.caption.34}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {IV.6.8}Kasus Batas pada Sumber Daya Quarter}{73}{subsection.4.6.8}\protected@file@percent }
+\@writefile{atoc}{\contentsline {subsection}{\numberline {IV.6.8}Kasus Batas pada Sumber Daya Quarter}{73}{subsection.4.6.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{Daftar Pustaka}{73}{subsection.4.6.8}\protected@file@percent }
+\@writefile{atoc}{\contentsline {chapter}{Daftar Pustaka}{73}{subsection.4.6.8}\protected@file@percent }
 \@writefile{toc}{\contentsfinish }
 \@writefile{atoc}{\contentsfinish }
 \@writefile{lof}{\contentsfinish }

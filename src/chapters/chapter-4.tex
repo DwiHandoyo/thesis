@@ -51,8 +51,8 @@ Pertama, bagaimana rentang operasional yang tepat untuk parameter kontrol berdas
 yang terukur, bukan berdasarkan heuristik intuitif.
 Kedua, apakah dinamika sinkronisasi CQRS dapat dimodelkan cukup baik untuk mendukung rancangan
 kontroler berbasis model.
-Ketiga, seberapa efektif LQR dibandingkan kontroler lain (berbasis aturan dan PID) dalam
-menjaga antrean tetap rendah pada berbagai pola beban.
+Ketiga, seberapa efektif LQR dibandingkan kontroler lain (berbasis aturan, PID, dan ANN
+berbasis Boltzmann MLE) dalam menjaga antrean tetap rendah pada berbagai pola beban.
 Keempat, bagaimana setiap kontroler berperilaku pada skenario beban yang berbeda dan apa yang
 membedakan konsistensi masing-masing.
 
@@ -573,11 +573,39 @@ Konfigurasi setengah (\emph{Half}) menggunakan separuh dari semuanya, yaitu 1{,}
 Konfigurasi seperempat (\emph{Quarter}) digunakan sebagai kasus batas dengan 0{,}5 CPU,
 512 MiB memori, dan JVM heap 256 MB.
 
-Pada masing-masing konfigurasi diuji enam strategi pengendalian, yaitu Statik, Rule-Based,
-PID, LQR-Q1, LQR-Q2, dan LQR-Q3.
+Pada masing-masing konfigurasi diuji sembilan strategi pengendalian, terdiri dari tiga
+kontroler baseline (Statik, Rule-Based, PID), tiga varian LQR per preset $Q$
+(LQR-Q1, LQR-Q2, LQR-Q3), dan tiga varian ANN per preset $Q$ (ANN-Q1, ANN-Q2, ANN-Q3).
+LQR dan ANN dilatih dengan target perilaku berbeda meskipun keduanya \emph{Q-aware}.
+Arsitektur ANN dibahas pada Subbab~\ref{sec:ann-arch}.
 Setiap kombinasi kontroler dan pola beban dijalankan satu kali pada lima pola, yaitu
 \emph{step}, \emph{ramp}, \emph{impulse}, \emph{periodic\_step}, dan \emph{step\_low},
-sehingga total terdapat 30 percobaan per konfigurasi sumber daya.
+sehingga total terdapat 45 percobaan per konfigurasi sumber daya.
+Pada tabel perbandingan, baris LQR dan ANN merepresentasikan varian yang dicocokkan dengan
+preset $Q$ di kolom tersebut (\emph{matched controller}).
+
+\subsection{Arsitektur Kontroler ANN}
+\label{sec:ann-arch}
+
+Sebagai pembanding berbasis data terhadap LQR berbasis model, sebuah \emph{Multi-Layer
+Perceptron} (MLP) sederhana dilatih dengan input 8 dimensi (4 variabel state ternormalisasi
+ditambah 4 nilai diagonal $Q$ yang ditransformasi $\log_{10}$) dan output 2 dimensi
+(\emph{batch\_size} dan \emph{inv\_poll\_interval} ternormalisasi). Arsitekturnya
+$8 \rightarrow 128 \rightarrow 128 \rightarrow 2$ dengan aktivasi ReLU pada dua lapisan
+tersembunyi.
+
+Metode pelatihannya adalah \emph{Boltzmann MLE} pada simulator yang dibangun dari
+\emph{capacity benchmark} sebagai model \emph{throughput}. Untuk setiap pasang (state acak,
+$Q$ acak), aksi $u$ optimal disampel dari distribusi Boltzmann
+$P(u \mid x, Q) \propto \exp(-J(u)/T)$ dan ANN dilatih untuk memaksimumkan \emph{likelihood}
+pemetaan dari kondisi tersebut ke $u$. Pendekatan ini tidak memerlukan demonstrasi LQR
+sebagai \emph{oracle}, dan menghasilkan satu model yang dapat menangani seluruh preset $Q$
+hanya dengan mengubah input $Q$.
+
+Perbedaan utama ANN dan LQR ada pada sumber pengetahuan. LQR memanfaatkan matriks $A,B$
+hasil identifikasi sistem dan menyelesaikan DARE, sementara ANN mempelajari pemetaan
+\emph{state-action} dari simulator data-driven. Karena keduanya memakai matriks $Q$ yang
+sama, keduanya termasuk \emph{Q-aware} dan dapat dibandingkan dalam satu kerangka biaya.
 
 \subsection{Metrik Evaluasi: Fungsi Biaya $J$ dan Regret Ternormalisasi}
 
@@ -609,24 +637,30 @@ pada masing-masing preset $Q$, beserta \emph{regret} ternormalisasi rata-rata.
     \renewcommand{\arraystretch}{1.4}
     \begin{tabular}{|l|r|r|r|r|}
     \hline
-    \textbf{Kontroler} & \textbf{Q1 (Backlog)} & \textbf{Q2 (Resource)} & \textbf{Q3 (Balanced)} & \textbf{Regret} \\
+    \textbf{Kontroler} & \textbf{Q1 (Backlog)} & \textbf{Q2 (Resource)} & \textbf{Q3 (Balanced)} & \textbf{Mean Regret} \\
     \hline
-    Statik           &  9.662 & 30.645 & 32.249 & 2,919 \\
+    Statik           & 287{,}10 & 272{,}72 & 447{,}06 & 1{,}099 \\
     \hline
-    Rule-Based       &  6.574 & 14.717 & 17.034 & 1,160 \\
+    Rule-Based       & 387{,}24 & 179{,}62 & 452{,}24 & 0{,}919 \\
     \hline
-    PID              &  4.046 &  9.804 & 11.080 & 0,391 \\
+    PID              & 256{,}42 & 125{,}35 & 304{,}75 & 0{,}302 \\
     \hline
-    \textbf{LQR}     & \textbf{3.152} & \textbf{7.428} & \textbf{7.062} & \textbf{0,000} \\
+    ANN              & 211{,}07 & 120{,}41 & 288{,}46 & 0{,}188 \\
+    \hline
+    \textbf{LQR}     & \textbf{205{,}27} & \textbf{88{,}65} & \textbf{245{,}27} & \textbf{0{,}000} \\
     \hline
     \end{tabular}
 \end{table}
 
-LQR menempati posisi terbaik (regret 0) pada seluruh preset $Q$, dengan biaya 22\%
-lebih rendah dari PID dan 67\% lebih rendah dari Statik pada preset Q1.
+LQR menempati posisi terbaik (regret 0) pada seluruh preset $Q$, dengan ANN sebagai
+kontroler adaptif kedua terbaik (regret 0{,}188). Kedua kontroler \emph{Q-aware} ini
+menyalip PID (regret 0{,}302) dan jauh meninggalkan baseline tanpa kapasitas adaptasi
+seperti Rule-Based dan Statik.
 Selisih besar terhadap Statik mengonfirmasi bahwa parameter statik tidak mampu memanfaatkan
-kapasitas tambahan yang tersedia, sementara LQR menyesuaikan aksi kontrol terhadap dinamika
-antrean.
+kapasitas tambahan, sementara LQR dan ANN menyesuaikan aksi kontrol terhadap dinamika
+antrean. Posisi ANN yang sedikit di bawah LQR menunjukkan bahwa pendekatan \emph{data-driven}
+via Boltzmann MLE mendekati performa kontrol optimal berbasis model, meskipun belum
+sepenuhnya menyamai.
 
 \begin{figure}[H]
     \centering
@@ -657,10 +691,7 @@ terlihat lebih lemah pada Statik karena \emph{batch} tetap tidak naik mengikuti 
     \label{fig:timeseries-queue-full}
 \end{figure}
 
-\emph{Timeseries} antrean menegaskan superioritas LQR sebagai kurva paling rendah dan paling
-stabil pada pola \emph{step} dan \emph{periodic\_step}, yaitu kondisi di mana antrean
-membangun terus-menerus sehingga keterlambatan reaksi kontroler langsung terlihat sebagai
-akumulasi backlog.
+Pada \emph{timeseries} antrean, kurva LQR terlihat paling rendah dan paling stabil di pola \emph{step} dan \emph{periodic\_step}, yaitu kondisi di mana antrean menumpuk terus sehingga keterlambatan reaksi kontroler langsung terlihat sebagai akumulasi backlog.
 
 \subsection{Hasil Sumber Daya Setengah}
 \label{sec:hasil-half}
@@ -675,23 +706,28 @@ Tabel~\ref{tab:cost-J-half} menunjukkan rangkuman fungsi biaya $J$ pada konfigur
     \renewcommand{\arraystretch}{1.4}
     \begin{tabular}{|l|r|r|r|r|}
     \hline
-    \textbf{Kontroler} & \textbf{Q1 (Backlog)} & \textbf{Q2 (Resource)} & \textbf{Q3 (Balanced)} & \textbf{Regret} \\
+    \textbf{Kontroler} & \textbf{Q1 (Backlog)} & \textbf{Q2 (Resource)} & \textbf{Q3 (Balanced)} & \textbf{Mean Regret} \\
     \hline
-    Statik           &  7.435 & 21.896 & 23.468 & 1,508 \\
+    Statik           & 282{,}21 & 180{,}56 & 369{,}23 & 0{,}751 \\
     \hline
-    Rule-Based       &  6.910 & 16.021 & 18.346 & 1,015 \\
+    Rule-Based       & 411{,}94 & 188{,}88 & 479{,}75 & 1{,}203 \\
     \hline
-    PID              &  4.158 &  9.187 & 10.677 & 0,180 \\
+    PID              & 253{,}53 & 114{,}00 & 293{,}49 & 0{,}345 \\
     \hline
-    \textbf{LQR}     & \textbf{3.717} & \textbf{8.314} & \textbf{8.119} & \textbf{0,000} \\
+    ANN              & 244{,}25 & 126{,}38 & 325{,}18 & 0{,}415 \\
+    \hline
+    \textbf{LQR}     & \textbf{161{,}22} & \textbf{91{,}72} & \textbf{240{,}72} & \textbf{0{,}000} \\
     \hline
     \end{tabular}
 \end{table}
 
-Hierarki kontroler tetap sama dengan konfigurasi penuh, dengan LQR memberikan biaya terendah
-dan ranking PID--Rule-Based--Statik mengikuti pola identik. Yang berbeda adalah jarak absolut
-mengecil pada Statik (regret 1{,}508 vs 2{,}919) karena baseline LQR ikut menurun saat
-kapasitas terbatas, bukan karena Statik membaik.
+Hierarki kontroler relatif konsisten dengan konfigurasi penuh, dengan LQR di posisi
+terbaik (regret 0) diikuti PID (0{,}345) dan ANN (0{,}415). Rule-Based justru memburuk
+melebihi Statik karena ambang tetap pada \emph{batch} dan \emph{poll} sudah tidak sesuai
+dengan kapasitas yang berkurang. Posisi ANN sedikit di bawah PID pada konfigurasi setengah
+mengindikasikan bahwa simulator \emph{capacity benchmark} yang digunakan untuk pelatihan
+ANN mencerminkan kondisi penuh sehingga generalisasi ke konfigurasi kapasitas berbeda
+membutuhkan kalibrasi tambahan.
 
 \begin{figure}[H]
     \centering
@@ -707,30 +743,32 @@ kapasitas terbatas, bukan karena Statik membaik.
     \label{fig:timeseries-queue-half}
 \end{figure}
 
-Tabel~\ref{tab:robustness} merangkum perubahan \emph{regret} antara dua konfigurasi.
-Statik dan Rule-Based degradasi cukup tajam saat sumber daya menipis, sementara PID dan LQR
-relatif stabil.
-Bahkan, \emph{regret} Statik membaik dari 2{,}919 ke 1{,}508 saat sumber daya berkurang.
-Anomali ini muncul karena \emph{regret} dinormalisasi terhadap kontroler terbaik, sehingga
-ketika baseline LQR juga melemah secara absolut, jarak relatif terhadap LQR menyempit.
-Yang penting adalah peringkat tetap konsisten yaitu LQR di posisi terbaik diikuti PID.
+Tabel~\ref{tab:robustness} merangkum \emph{regret} rata-rata empat kombinasi mesin dan
+konfigurasi. LQR selalu di posisi terbaik dengan \emph{regret} mendekati nol di seluruh
+skenario, diikuti PID dan ANN yang berada di kelompok kontroler adaptif. Statik dan
+Rule-Based mengalami lonjakan \emph{regret} sangat besar pada mesin Intel (hingga 39 kali)
+karena karakteristik perangkat keras yang berbeda membuat parameter tetap menjadi sangat
+tidak optimal. ANN cenderung lebih sensitif terhadap perbedaan mesin dibanding LQR,
+konsisten dengan asumsi simulator pelatihannya yang dikalibrasi pada satu kondisi.
 
 \begin{table}[H]
     \centering
-    \caption{Perbandingan \emph{regret} rata-rata pada dua konfigurasi sumber daya}
+    \caption{Perbandingan \emph{regret} rata-rata pada empat kombinasi mesin dan sumber daya}
     \label{tab:robustness}
     \renewcommand{\arraystretch}{1.4}
     \begin{tabular}{|l|r|r|r|r|}
     \hline
     \textbf{Kontroler} & \textbf{AMD Full} & \textbf{AMD Half} & \textbf{Intel Full} & \textbf{Intel Half} \\
     \hline
-    Statik       & 2,919 & 1,508 & 24,722 &  6,387 \\
+    Statik       &  1{,}099 &  0{,}751 & 39{,}410 & 27{,}287 \\
     \hline
-    Rule-Based   & 1,160 & 1,015 & 10,150 &  3,208 \\
+    Rule-Based   &  0{,}919 &  1{,}203 & 15{,}875 & 13{,}702 \\
     \hline
-    PID          & 0,391 & 0,180 &  0,365 &  0,064 \\
+    PID          &  0{,}302 &  0{,}345 &  0{,}147 &  0{,}080 \\
     \hline
-    \textbf{LQR} & \textbf{0,000} & \textbf{0,000} & \textbf{0,024} & \textbf{0,000} \\
+    ANN          &  0{,}188 &  0{,}415 &  0{,}486 &  0{,}533 \\
+    \hline
+    \textbf{LQR} & \textbf{0{,}000} & \textbf{0{,}000} & \textbf{0{,}074} & \textbf{0{,}024} \\
     \hline
     \end{tabular}
 \end{table}
@@ -738,23 +776,26 @@ Yang penting adalah peringkat tetap konsisten yaitu LQR di posisi terbaik diikut
 \subsection{Adaptasi Antar Preset Q}
 \label{sec:adaptasi}
 
-Salah satu karakteristik LQR yang membedakannya dari kontroler lain adalah kemampuannya
-mengubah perilaku berdasarkan matriks bobot $Q$.
-Gambar~\ref{fig:state-across-q-lqr} menampilkan bagaimana LQR menyesuaikan variabel
-sistem saat preset $Q$ berubah.
+Salah satu karakteristik kontroler \emph{Q-aware} (LQR dan ANN) yang membedakannya dari
+kontroler lain adalah kemampuannya mengubah perilaku berdasarkan matriks bobot $Q$.
+Gambar~\ref{fig:state-across-q-lqr} menampilkan bagaimana LQR dan ANN menyesuaikan
+variabel sistem saat preset $Q$ berubah.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{IV_R4__state_across_q_full.png}
-    \caption{Rata-rata variabel sistem LQR pada tiga preset $Q$ (sumber daya penuh)}
+    \caption{Rata-rata variabel sistem LQR dan ANN pada tiga preset $Q$ (sumber daya penuh)}
     \label{fig:state-across-q-lqr}
 \end{figure}
 
-LQR menanggapi setiap preset $Q$ dengan menggeser titik kerja sesuai prioritas.
-LQR-Q1 yang mengutamakan antrean menjaga latensi paling rendah, sedangkan LQR-Q2 yang
-menonjolkan bobot sumber daya menarik CPU ke titik terendah meskipun latensi sedikit
-naik. LQR-Q3 berada di antara keduanya, mengonfirmasi bahwa pergeseran prioritas $Q$
-dapat dipetakan secara prediktif ke perilaku kontrol.
+LQR maupun ANN menanggapi setiap preset $Q$ dengan menggeser titik kerja sesuai prioritas.
+Pada preset Q1 yang mengutamakan antrean, keduanya menarik latensi ke nilai paling rendah.
+Pada preset Q2 yang menonjolkan sumber daya, CPU dan operasi I/O turun meskipun latensi
+sedikit naik. Q3 berada di antara keduanya. Pola pergeseran ANN tidak identik dengan LQR
+karena ANN dilatih dari pemetaan Boltzmann pada simulator, sedangkan LQR menyelesaikan
+DARE secara analitik. Meskipun jalur penyesuaian berbeda, keduanya tetap mengikuti arah
+prioritas $Q$ yang diberikan, mengonfirmasi bahwa konsep \emph{Q-awareness} bukan eksklusif
+pada metode kontrol optimal klasik.
 
 Gambar~\ref{fig:state-across-q-baseline} menampilkan kontroler lain sebagai perbandingan.
 
@@ -795,27 +836,29 @@ untuk setiap kontroler pada keempat eksperimen.
     \hline
     \textbf{Kontroler} & \textbf{Intel Full} & \textbf{Intel Half} & \textbf{AMD Full} & \textbf{AMD Half} \\
     \hline
-    Statik        & 46.483 & 48.910 & 24.185 & 17.600 \\
+    Statik        & 5.288{,}52 & 5.155{,}40 & 335{,}62 & 277{,}33 \\
     \hline
-    Rule-Based    & 19.978 & 28.879 & 12.775 & 13.759 \\
+    Rule-Based    & 2.206{,}72 & 2.675{,}07 & 339{,}70 & 360{,}19 \\
     \hline
-    PID           &  2.158 &  9.297 &  8.310 &  8.007 \\
+    PID           &    145{,}60 &   187{,}92 & 228{,}84 & 220{,}34 \\
     \hline
-    \textbf{LQR}  & \textbf{1.732} & \textbf{8.765} & \textbf{5.881} & \textbf{6.717} \\
+    ANN           &    187{,}55 &   265{,}00 & 206{,}65 & 231{,}94 \\
+    \hline
+    \textbf{LQR}  & \textbf{143{,}28} & \textbf{173{,}94} & \textbf{179{,}73} & \textbf{164{,}55} \\
     \hline
     \end{tabular}
 \end{table}
 
-LQR memberikan cost $J$ terendah di seluruh empat eksperimen.
-Statik dan Rule-Based mengalami lonjakan drastis pada mesin Intel, yang menunjukkan
+LQR memberikan cost $J$ terendah di seluruh empat eksperimen, dengan ANN menjadi
+kontroler adaptif kedua terbaik di mesin AMD (di bawah PID) sekaligus menyetujui
+posisi PID di mesin Intel. Statik dan Rule-Based mengalami lonjakan drastis pada
+mesin Intel, sekitar 15 hingga 30 kali lebih tinggi dibanding AMD, yang menunjukkan
 bahwa strategi dengan parameter tetap sangat rentan terhadap perbedaan karakteristik
 perangkat keras.
-Pada kedua konfigurasi Mac, Statik mencapai nilai $J$ rata-rata di atas 46.000, sekitar
-dua hingga tiga kali lebih tinggi dibanding AMD, karena perbedaan karakteristik
-perangkat keras menyebabkan antrean membangun jauh lebih cepat dari yang dapat
-ditangani oleh parameter statis.
-PID dan LQR jauh lebih stabil lintas mesin karena keduanya bereaksi terhadap kondisi
-aktual sistem, bukan bergantung pada nilai parameter yang ditetapkan sebelumnya.
+PID, LQR, dan ANN jauh lebih stabil lintas mesin karena ketiganya bereaksi terhadap
+kondisi aktual sistem. ANN dan LQR sama-sama \emph{Q-aware} sehingga perilaku keduanya
+bergeser saat preset $Q$ berubah, sementara PID memberikan respon yang sama terlepas
+dari prioritas yang dipilih.
 
 Gambar~\ref{fig:cross-experiment} menyajikan data yang sama dalam bentuk batang dengan
 skala mandiri per panel. Skala mandiri diperlukan karena nilai absolut $J$ berbeda jauh
