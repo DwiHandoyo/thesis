@@ -654,8 +654,8 @@ pada masing-masing preset $Q$, beserta \emph{regret} ternormalisasi rata-rata.
 
 LQR menempati posisi terbaik (regret 0) pada seluruh preset $Q$, dengan ANN sebagai
 kontroler adaptif kedua terbaik (regret 0{,}188). Kedua kontroler \emph{Q-aware} ini
-menyalip PID (regret 0{,}302) dan jauh meninggalkan baseline tanpa kapasitas adaptasi
-seperti Rule-Based dan Statik.
+mencatat regret lebih rendah dari PID (regret 0{,}302), dan selisihnya terhadap Rule-Based
+maupun Statik yang tidak adaptif jauh lebih besar.
 Selisih besar terhadap Statik mengonfirmasi bahwa parameter statik tidak mampu memanfaatkan
 kapasitas tambahan, sementara LQR dan ANN menyesuaikan aksi kontrol terhadap dinamika
 antrean. Posisi ANN yang sedikit di bawah LQR menunjukkan bahwa pendekatan \emph{data-driven}
@@ -680,8 +680,8 @@ penentu performa.
     \label{fig:throughput-full}
 \end{figure}
 
-LQR mencapai \emph{throughput} tertinggi pada pola \emph{impulse}, membuktikan kemampuannya
-mempercepat drainase ketika antrean melonjak ke 10.000 secara mendadak. Pola yang sama
+LQR mencapai \emph{throughput} tertinggi pada pola \emph{impulse}, sehingga drainase
+berjalan lebih cepat ketika antrean melonjak ke 10.000 secara mendadak. Pola yang sama
 terlihat lebih lemah pada Statik karena \emph{batch} tetap tidak naik mengikuti lonjakan beban.
 
 \begin{figure}[H]
@@ -810,7 +810,7 @@ Statik, Rule-Based, dan PID tampil sebagai garis datar karena perilakunya
 tidak ditentukan oleh $Q$.
 Ketiganya tidak memiliki mekanisme untuk menyerap perubahan prioritas, sehingga menghasilkan
 nilai variabel sistem yang sama untuk seluruh preset.
-Inilah yang menjadi nilai utama LQR sebagai kontroler berbasis fungsi biaya, yaitu satu
+Sebaliknya, kelebihan utama LQR sebagai kontroler berbasis fungsi biaya adalah satu
 implementasi dapat dikonfigurasi ulang untuk prioritas yang berbeda hanya dengan mengganti
 matriks $Q$.
 
@@ -849,9 +849,8 @@ untuk setiap kontroler pada keempat eksperimen.
     \end{tabular}
 \end{table}
 
-LQR memberikan cost $J$ terendah di seluruh empat eksperimen, dengan ANN menjadi
-kontroler adaptif kedua terbaik di mesin AMD (di bawah PID) sekaligus menyetujui
-posisi PID di mesin Intel. Statik dan Rule-Based mengalami lonjakan drastis pada
+LQR memberikan cost $J$ terendah di seluruh empat eksperimen, dengan ANN dan PID
+bergantian menempati posisi kontroler adaptif terbaik kedua antar konfigurasi mesin. Statik dan Rule-Based mengalami lonjakan drastis pada
 mesin Intel, sekitar 15 hingga 30 kali lebih tinggi dibanding AMD, yang menunjukkan
 bahwa strategi dengan parameter tetap sangat rentan terhadap perbedaan karakteristik
 perangkat keras.

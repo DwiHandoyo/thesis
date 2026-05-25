@@ -133,8 +133,8 @@ Validitas asumsi ini kemudian diuji melalui eksperimen \emph{open-loop} pada tah
 
 \subsection{Perancangan Fungsi Biaya dan Definisi Keseimbangan}
 
-Tujuan pengendalian dalam penelitian ini adalah menyeimbangkan kecepatan sinkronisasi data dengan efisiensi penggunaan sumber daya.
-Trade-off tersebut tidak dapat diwakili oleh satu metrik tunggal, karena melibatkan beberapa tujuan yang saling bertentangan, seperti minimisasi backlog, pengurangan latensi sinkronisasi, dan pembatasan utilisasi sumber daya agar tidak melampaui kapasitas sistem (Bailis dkk., 2012).
+Tujuan pengendalian dalam penelitian ini adalah mengompromikan kecepatan sinkronisasi data dengan efisiensi penggunaan sumber daya.
+Kompromi ini tidak dapat diwakili oleh satu metrik tunggal, karena melibatkan beberapa tujuan yang saling bertentangan, seperti minimisasi backlog, pengurangan latensi sinkronisasi, dan pembatasan utilisasi sumber daya agar tidak melampaui kapasitas sistem (Bailis dkk., 2012).
 
 Untuk merepresentasikan tujuan tersebut secara formal, digunakan fungsi biaya kuadratik:
 
@@ -250,7 +250,7 @@ Selama satu periode pengamatan, aksi kontrol dijaga tetap konstan untuk setiap k
 Nilai fungsi biaya kemudian dihitung dari respons tersebut, dan kombinasi parameter yang menghasilkan nilai fungsi biaya minimum ditetapkan sebagai aksi kontrol optimal untuk kondisi sistem tersebut.
 
 Pendekatan ini memastikan bahwa definisi $u^*(t)$ konsisten dengan tujuan pengendalian LQR, meskipun diperoleh melalui evaluasi empiris.
-Dengan demikian, $u^*(t)$ menjadi aksi kontrol paling seimbang untuk kondisi sistem tertentu dalam batas asumsi dan horizon pengamatan yang dipakai, dan dipakai sebagai acuan pada analisis performa serta perbandingan di tahap evaluasi.
+Dengan demikian, $u^*(t)$ menjadi aksi kontrol paling seimbang untuk kondisi sistem tertentu dalam batas asumsi dan horizon pengamatan yang berlaku, dan menjadi acuan pada analisis performa serta perbandingan di tahap evaluasi.
 
 \section{Desain Eksperimen dan Skenario Pengujian}
 
